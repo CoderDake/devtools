@@ -90,6 +90,7 @@ class FlutterTestEnvironment {
     bool force = false,
     FlutterRunConfiguration? config,
   }) async {
+    print("setupEnvironment: pid(${pid})");
     // Setting up the environment is slow so we reuse the existing environment
     // when possible.
     if (force ||
@@ -137,6 +138,7 @@ class FlutterTestEnvironment {
   }
 
   Future<void> tearDownEnvironment({bool force = false}) async {
+    print("tearDownEnvironment: pid(${pid})");
     if (_needsSetup) {
       // _needsSetup=true means we've never run setup code or already cleaned up
       return;
