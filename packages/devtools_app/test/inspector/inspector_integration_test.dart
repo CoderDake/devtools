@@ -50,7 +50,7 @@ void main() async {
 
   group('screenshot tests', () {
     tearDownAll(() async {
-      await env.tearDownEnvironment(force: true);
+      await env.tearDownEnvironment();
     });
 
     testWidgetsWithWindowSize('navigation', windowSize,
@@ -401,7 +401,7 @@ void main() async {
 
   group('widget errors', () {
     tearDownAll(() async {
-      await env.tearDownEnvironment(force: true);
+      await env.tearDownEnvironment();
     });
 
     testWidgetsWithWindowSize('show navigator and error labels', windowSize,

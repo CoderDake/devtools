@@ -37,7 +37,7 @@ void main() async {
 
     group('MemoryController', () {
       tearDownAll(() {
-        env.tearDownEnvironment(force: true);
+        env.tearDownEnvironment();
       });
 
       test('heap info', () async {

@@ -43,7 +43,7 @@ void main() {
   });
 
   tearDownAll(() async {
-    await env.tearDownEnvironment(force: true);
+    await env.tearDownEnvironment();
   });
 
   Future<void> runMethodAndWaitForPause(String method) async {

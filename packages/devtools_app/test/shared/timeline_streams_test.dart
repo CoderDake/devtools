@@ -18,7 +18,7 @@ void main() async {
 
   group('TimelineStreamManager', () {
     tearDownAll(() async {
-      await env.tearDownEnvironment(force: true);
+      await env.tearDownEnvironment();
     });
 
     test(

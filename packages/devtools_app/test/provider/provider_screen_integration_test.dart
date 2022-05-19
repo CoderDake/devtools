@@ -43,7 +43,7 @@ void main() async {
   tearDown(() async {
     isAlive.dispose();
     evalOnDartLibrary.dispose();
-    await env.tearDownEnvironment(force: true);
+    await env.tearDownEnvironment();
   });
 
   test(
