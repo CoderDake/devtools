@@ -22,7 +22,7 @@ void main() {
 
   tearDown(() async {
     isAlive.dispose();
-    await env.tearDownEnvironment();
+    await env.tearDownEnvironment(force: true);
   });
 
   group('EvalOnDartLibrary', () {

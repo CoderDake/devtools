@@ -98,7 +98,7 @@ class FlutterTestEnvironment {
         _isNewRunConfig(config)) {
       // If we already have a running test device, stop it before setting up a
       // new one.
-      if (_flutter != null) await tearDownEnvironment();
+      if (_flutter != null) await tearDownEnvironment(force: true);
 
       // Update the run configuration if we have a new one.
       if (_isNewRunConfig(config)) _runConfig = config!;

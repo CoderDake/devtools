@@ -40,7 +40,7 @@ void main() async {
   try {
     group('inspector service tests', () {
       tearDown(env.tearDownEnvironment);
-      tearDownAll(() => env.tearDownEnvironment());
+      tearDownAll(() => env.tearDownEnvironment(force: true));
 
       test('track widget creation on', () async {
         await env.setupEnvironment();

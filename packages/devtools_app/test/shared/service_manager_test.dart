@@ -33,7 +33,7 @@ void main() async {
     'ServiceConnectionManager',
     () {
       tearDownAll(() async {
-        await env.tearDownEnvironment();
+        await env.tearDownEnvironment(force: true);
       });
 
       test(

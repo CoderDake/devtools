@@ -16,7 +16,7 @@ void main() async {
 
   group('VmFlagManager', () {
     tearDownAll(() async {
-      await env.tearDownEnvironment();
+      await env.tearDownEnvironment(force: true);
     });
 
     test(

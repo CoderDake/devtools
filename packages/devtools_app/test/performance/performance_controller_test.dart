@@ -32,7 +32,7 @@ void main() async {
 
   group('PerformanceController', () {
     tearDownAll(() async {
-      await env.tearDownEnvironment();
+      await env.tearDownEnvironment(force: true);
     });
 
     test(
