@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-COUNT=50
+COUNT=100
 TEST_NAME=$1
 NOW=$(date +"%Y-%m-%d-%s")
 TEST_DIR=.test/${NOW}_${TEST_NAME}
