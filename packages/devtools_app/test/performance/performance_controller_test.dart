@@ -42,6 +42,9 @@ void main() async {
         offlineController.enterOfflineMode();
         final offlineTimelineData =
             OfflinePerformanceData.parse(offlinePerformanceDataJson);
+
+        print(
+            "DAKE processOfflineData: offlineTimelineData: ${offlineTimelineData}");
         await performanceController.processOfflineData(offlineTimelineData);
         expect(
           isPerformanceDataEqual(

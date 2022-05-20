@@ -707,6 +707,10 @@ class PerformanceController extends DisposableController
     // TODO(kenz): once each trace event has a ui/raster distinction bit added to
     // the trace, we will not need to infer thread ids. This is not robust.
     final uiThreadId = _threadIdForEvents({uiEventName}, traceEvents);
+    if (uiThreadId == -1) {
+      print("DAKE uiThreadId is -1: traceEvents: ${traceEvents}");
+    }
+
     final rasterThreadId = _threadIdForEvents({rasterEventName}, traceEvents);
 
     offlinePerformanceData = offlineData.shallowClone();
