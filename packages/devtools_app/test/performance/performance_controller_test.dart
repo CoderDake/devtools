@@ -24,14 +24,14 @@ void main() async {
   );
 
   late PerformanceController performanceController;
-  env.afterNewSetup = () async {
+  env.afterEverySetup = () async {
     setGlobal(OfflineModeController, OfflineModeController());
     performanceController = PerformanceController()..data = PerformanceData();
     await performanceController.initialized;
   };
 
   group('PerformanceController', () {
-    tearDownAll(() async {
+    tearDown(() async {
       await env.tearDownEnvironment(force: true);
     });
 
