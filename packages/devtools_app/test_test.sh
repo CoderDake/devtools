@@ -18,7 +18,7 @@ flutter clean
 for (( i=1; i<=$COUNT; i++ ))
 do
   TEST_NAME=.tmp_test.log
-  flutter test test/performance/performance_controller_test.dart test/inspector/inspector_integration_test.dart > $TEST_NAME
+  flutter test test/performance/performance_controller_test.dart  > $TEST_NAME
   if [ $? -eq 0 ]; then
     PASS_COUNT=$((PASS_COUNT+1))
     mv $TEST_NAME $PASS_DIR/test-$i.log
