@@ -104,13 +104,14 @@ class FlutterTestEnvironment {
       if (_isNewRunConfig(config)) _runConfig = config!;
 
       _needsSetup = false;
-
-      _flutter = _flutterDriverFactory(Directory(testAppDirectory))
-          as FlutterRunTestDriver?;
-      await _flutter!.run(
-        flutterExecutable: _flutterExe,
-        runConfig: _runConfig,
-      );
+      if (_flutter != null) {
+        _flutter = _flutterDriverFactory(Directory(testAppDirectory))
+            as FlutterRunTestDriver?;
+        await _flutter!.run(
+          flutterExecutable: _flutterExe,
+          runConfig: _runConfig,
+        );
+      }
 
       _service = _flutter!.vmService!;
       final preferencesController = PreferencesController();
@@ -153,17 +154,17 @@ class FlutterTestEnvironment {
 
     serviceManager.manuallyDisconnect();
 
-    // await _service.allFuturesCompleted.timeout(
-    //   const Duration(seconds: 20),
-    //   onTimeout: () {
-    //     throw 'Timed out waiting for futures to complete during teardown. '
-    //         '${_service.activeFutures.length} futures remained:\n\n'
-    //         '  ${_service.activeFutures.map((tf) => tf.name).join('\n  ')}';
-    //   },
-    // );
-    await _flutter!.stop();
+    await _service.allFuturesCompleted.timeout(
+      const Duration(seconds: 20),
+      onTimeout: () {
+        throw 'Timed out waiting for futures to complete during teardown. '
+            '${_service.activeFutures.length} futures remained:\n\n'
+            '  ${_service.activeFutures.map((tf) => tf.name).join('\n  ')}';
+      },
+    );
+    // await _flutter!.stop();
 
-    _flutter = null;
+    // _flutter = null;
 
     _needsSetup = true;
   }
