@@ -44,7 +44,7 @@ void main() async {
             OfflinePerformanceData.parse(offlinePerformanceDataJson);
 
         print(
-            "DAKE processOfflineData: offlineTimelineData: ${offlineTimelineData}");
+            "DAKE processOfflineData: offlineTimelineData offlineTimelineData.traceEvents.map((e) => e['name']): ${offlineTimelineData.traceEvents.map((e) => e['name'])}");
         await performanceController.processOfflineData(offlineTimelineData);
         expect(
           isPerformanceDataEqual(

@@ -708,7 +708,8 @@ class PerformanceController extends DisposableController
     // the trace, we will not need to infer thread ids. This is not robust.
     final uiThreadId = _threadIdForEvents({uiEventName}, traceEvents);
     if (uiThreadId == -1) {
-      print("DAKE uiThreadId is -1: traceEvents: ${traceEvents}");
+      print(
+          "DAKE uiThreadId is -1: traceEvents:traceEvents.map((e) => e.event.name) ${traceEvents.map((e) => e.event.name)}");
     }
 
     final rasterThreadId = _threadIdForEvents({rasterEventName}, traceEvents);
