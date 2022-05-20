@@ -27,4 +27,5 @@ do
     mv $TEST_NAME $FAIL_DIR/test-$i.log
   fi
   echo "PASSES: $PASS_COUNT FAILS: $FAIL_COUNT"
+  rm -rf /tmp/flutter_tools*
 done
