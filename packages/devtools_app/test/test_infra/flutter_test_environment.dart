@@ -90,6 +90,7 @@ class FlutterTestEnvironment {
     bool force = false,
     FlutterRunConfiguration? config,
   }) async {
+    force = true;
     // Setting up the environment is slow so we reuse the existing environment
     // when possible.
     if (force ||
@@ -104,14 +105,13 @@ class FlutterTestEnvironment {
       if (_isNewRunConfig(config)) _runConfig = config!;
 
       _needsSetup = false;
-      if (_flutter != null) {
-        _flutter = _flutterDriverFactory(Directory(testAppDirectory))
-            as FlutterRunTestDriver?;
-        await _flutter!.run(
-          flutterExecutable: _flutterExe,
-          runConfig: _runConfig,
-        );
-      }
+
+      _flutter = _flutterDriverFactory(Directory(testAppDirectory))
+          as FlutterRunTestDriver?;
+      await _flutter!.run(
+        flutterExecutable: _flutterExe,
+        runConfig: _runConfig,
+      );
 
       _service = _flutter!.vmService!;
       final preferencesController = PreferencesController();
@@ -138,6 +138,7 @@ class FlutterTestEnvironment {
   }
 
   Future<void> tearDownEnvironment({bool force = false}) async {
+    force = true;
     if (_needsSetup) {
       // _needsSetup=true means we've never run setup code or already cleaned up
       return;
@@ -162,9 +163,9 @@ class FlutterTestEnvironment {
             '  ${_service.activeFutures.map((tf) => tf.name).join('\n  ')}';
       },
     );
-    // await _flutter!.stop();
+    await _flutter!.stop();
 
-    // _flutter = null;
+    _flutter = null;
 
     _needsSetup = true;
   }
