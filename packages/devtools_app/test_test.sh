@@ -10,10 +10,9 @@ FAIL_DIR=$TEST_DIR/fails
 PASS_COUNT=0
 FAIL_COUNT=0
 
+mkdir -p $PASS_DIR
+mkdir -p $FAIL_DIR
 ((
-  mkdir -p $PASS_DIR
-  mkdir -p $FAIL_DIR
-
   flutter clean
 
   cp test_test.sh $TEST_DIR/
