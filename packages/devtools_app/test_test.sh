@@ -15,6 +15,8 @@ mkdir -p $FAIL_DIR
 
 flutter clean
 
+cp test_test.sh $TEST_DIR/
+
 for (( i=1; i<=$COUNT; i++ ))
 do
   TEST_NAME=.tmp_test.log
