@@ -110,9 +110,10 @@ class FlutterTestEnvironment {
       await _flutter!.run(
         flutterExecutable: _flutterExe,
         runConfig: _runConfig,
+        withDebugger: true,
       );
 
-      _service = _flutter!.vmService!;
+      _service = _flutter!.vmServiceWrapper!;
       final preferencesController = PreferencesController();
       setGlobal(Storage, FlutterDesktopStorage());
       await preferencesController.init();

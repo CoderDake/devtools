@@ -60,6 +60,8 @@ dev_dependencies:
     sdk: flutter
   mockito: ^5.1.0
   webkit_inspection_protocol: '>=0.5.0 <2.0.0'
+  flutter_tools:
+    path: ../../../flutter/packages/flutter_tools
 
 flutter:
   uses-material-design: true
@@ -123,5 +125,3 @@ dependency_overrides:
     path: ../devtools_shared #OVERRIDE_FOR_DEVELOPMENT
   devtools_test: #OVERRIDE_FOR_DEVELOPMENT
       path: ../devtools_test #OVERRIDE_FOR_DEVELOPMENT
-  flutter_tools:
-    path: ../flutter_tools

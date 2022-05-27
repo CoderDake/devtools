@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io; // flutter_ignore: dart_io_import
 
-import 'package:file/file.dart';
+import 'package:devtools_app/devtools_app.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/io.dart';
 import 'package:flutter_tools/src/base/utils.dart';
@@ -56,7 +56,8 @@ abstract class FlutterTestDriver {
   bool _hasExited = false;
 
   VmService? _vmService;
-  VmService? get vmService => _vmService;
+  VmServiceWrapper? vmServiceWrapper = null;
+
   String get lastErrorInfo => _errorBuffer.toString();
   Stream<String> get stdout => _stdout.stream;
   Stream<String> get stderr => _stderr.stream;
@@ -89,13 +90,13 @@ abstract class FlutterTestDriver {
   }
 
   Future<void> _setupProcess(
+    String flutterExe,
     List<String> arguments, {
     String? script,
     bool withDebugger = false,
     bool singleWidgetReloads = false,
   }) async {
-    final String flutterBin =
-        fileSystem.path.join(getFlutterRoot(), 'bin', 'flutter');
+    final String flutterBin = flutterExe;
     if (withDebugger) {
       arguments.add('--start-paused');
     }
@@ -108,8 +109,11 @@ abstract class FlutterTestDriver {
     _debugPrint('Spawning flutter $arguments in ${_projectFolder.path}');
 
     const ProcessManager processManager = LocalProcessManager();
+    final cmd = <String>[flutterBin].followedBy(arguments).toList();
+    print("CMD ${cmd}");
+    print("Working Directory ${_projectFolder.path}");
     _process = await processManager.start(
-      <String>[flutterBin].followedBy(arguments).toList(),
+      cmd,
       workingDirectory: _projectFolder.path,
       // The web environment variable has the same effect as `flutter config --enable-web`.
       environment: <String, String>{
@@ -145,6 +149,11 @@ abstract class FlutterTestDriver {
     _vmService!.onSend.listen((String s) => _debugPrint(s, topic: '=vm=>'));
     _vmService!.onReceive.listen((String s) => _debugPrint(s, topic: '<=vm='));
 
+    vmServiceWrapper = VmServiceWrapper(
+      _vmService!,
+      _vmServiceWsUri!,
+      trackFutures: true,
+    );
     final Completer<void> isolateStarted = Completer<void>();
     _vmService!.onIsolateEvent.listen((Event event) {
       if (event.kind == EventKind.kIsolateStart) {
@@ -528,10 +537,13 @@ class FlutterRunTestDriver extends FlutterTestDriver {
     bool expressionEvaluation = true,
     bool structuredErrors = false,
     bool singleWidgetReloads = false,
+    required String flutterExecutable,
+    FlutterRunConfiguration? runConfig,
     String? script,
     List<String>? additionalCommandArgs,
   }) async {
     await _setupProcess(
+      flutterExecutable,
       <String>[
         'run',
         if (!chrome) '--disable-service-auth-codes',
@@ -559,6 +571,7 @@ class FlutterRunTestDriver extends FlutterTestDriver {
 
   Future<void> attach(
     int port, {
+    required String flutterExe,
     bool withDebugger = false,
     bool startPaused = false,
     bool pauseOnExceptions = false,
@@ -567,6 +580,7 @@ class FlutterRunTestDriver extends FlutterTestDriver {
   }) async {
     _attachPort = port;
     await _setupProcess(
+      flutterExe,
       <String>[
         'attach',
         ...getLocalEngineArguments(),
@@ -588,6 +602,7 @@ class FlutterRunTestDriver extends FlutterTestDriver {
 
   @override
   Future<void> _setupProcess(
+    String flutterExe,
     List<String> args, {
     String? script,
     bool withDebugger = false,
@@ -598,6 +613,7 @@ class FlutterRunTestDriver extends FlutterTestDriver {
   }) async {
     assert(!startPaused || withDebugger);
     await super._setupProcess(
+      flutterExe,
       args,
       script: script,
       withDebugger: withDebugger,
@@ -617,7 +633,8 @@ class FlutterRunTestDriver extends FlutterTestDriver {
       }
     }));
 
-    unawaited(() async {
+    await () async {
+      // AHA!! I Wonder if this might even be the issue from before
       try {
         // Stash the PID so that we can terminate the VM more reliably than using
         // _process.kill() (`flutter` is a shell script so _process itself is a
@@ -660,7 +677,7 @@ class FlutterRunTestDriver extends FlutterTestDriver {
         prematureExitGuard.completeError(
             Exception(error.toString()), stackTrace);
       }
-    }());
+    }();
 
     return prematureExitGuard.future;
   }
@@ -814,19 +831,22 @@ class FlutterTestTestDriver extends FlutterTestDriver {
   FlutterTestTestDriver(super.projectFolder, {super.logPrefix});
 
   Future<void> test({
+    required String flutterExe,
     String testFile = 'test/test.dart',
     bool withDebugger = false,
     bool pauseOnExceptions = false,
     bool coverage = false,
     Future<void> Function()? beforeStart,
   }) async {
-    await _setupProcess(<String>[
-      'test',
-      ...getLocalEngineArguments(),
-      '--disable-service-auth-codes',
-      '--machine',
-      if (coverage) '--coverage',
-    ],
+    await _setupProcess(
+        flutterExe,
+        <String>[
+          'test',
+          ...getLocalEngineArguments(),
+          '--disable-service-auth-codes',
+          '--machine',
+          if (coverage) '--coverage',
+        ],
         script: testFile,
         withDebugger: withDebugger,
         pauseOnExceptions: pauseOnExceptions,
@@ -835,6 +855,7 @@ class FlutterTestTestDriver extends FlutterTestDriver {
 
   @override
   Future<void> _setupProcess(
+    String flutterExe,
     List<String> args, {
     String? script,
     bool withDebugger = false,
@@ -843,6 +864,7 @@ class FlutterTestTestDriver extends FlutterTestDriver {
     bool singleWidgetReloads = false,
   }) async {
     await super._setupProcess(
+      flutterExe,
       args,
       script: script,
       withDebugger: withDebugger,
