@@ -31,7 +31,12 @@ void main() async {
   };
 
   group('PerformanceController', () {
-    tearDown(() async {
+    setUp(() {
+      // This flag should never be turned on in production.
+      expect(debugSimpleTrace, isFalse);
+    });
+
+    tearDownAll(() async {
       await env.tearDownEnvironment(force: true);
     });
 
