@@ -28,9 +28,9 @@ void main() async {
   final FlutterTestEnvironment env = FlutterTestEnvironment(
     const FlutterRunConfiguration(withDebugger: true),
   );
-
   group(
     'ServiceConnectionManager',
+    skip: true,
     () {
       tearDownAll(() async {
         await env.tearDownEnvironment(force: true);
