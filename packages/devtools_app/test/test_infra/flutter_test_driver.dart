@@ -632,10 +632,11 @@ class FlutterRunTestDriver extends FlutterTestDriver {
             'Process exited prematurely: ${args.join(' ')}: $_errorBuffer'));
       }
     }));
-
+    print('DAKE: OOO 1');
     await () async {
       // AHA!! I Wonder if this might even be the issue from before
       try {
+        print('DAKE: OOO 2');
         // Stash the PID so that we can terminate the VM more reliably than using
         // _process.kill() (`flutter` is a shell script so _process itself is a
         // shell, not the flutter tool's Dart process).
@@ -649,12 +650,15 @@ class FlutterRunTestDriver extends FlutterTestDriver {
         final Future<Map<String, Object?>> started =
             _waitFor(event: 'app.started', timeout: appStartTimeout);
 
+        print('DAKE: OOO 3');
         if (withDebugger) {
+          print('DAKE: OOO 4');
           final Map<String, Object?> debugPort =
               await _waitFor(event: 'app.debugPort', timeout: appStartTimeout);
           final String wsUriString = (debugPort['params']!
               as Map<String, Object?>)['wsUri']! as String;
           _vmServiceWsUri = Uri.parse(wsUriString);
+          print('DAKE: OOO 5');
           await connectToVmService(pauseOnExceptions: pauseOnExceptions);
           if (!startPaused) {
             await resume();
@@ -674,9 +678,13 @@ class FlutterRunTestDriver extends FlutterTestDriver {
             as Map<String, Object?>?)?['appId'] as String?;
         prematureExitGuard.complete();
       } on Exception catch (error, stackTrace) {
+        print('DAKE: OOO ERRR 6');
         prematureExitGuard.completeError(
-            Exception(error.toString()), stackTrace);
+          Exception(error.toString()),
+          stackTrace,
+        );
       }
+      print('DAKE: OOO 7');
     }();
 
     return prematureExitGuard.future;
