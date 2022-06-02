@@ -415,6 +415,9 @@ class InspectorController extends DisposableController
 
   InspectorService get inspectorService =>
       serviceManager.inspectorService as InspectorService;
+  List<String>? get rootDirectories =>
+      _rootDirectories ?? parent!.rootDirectories;
+  List<String>? _rootDirectories;
 
   Future<void> maybeLoadUI() async {
     if (parent != null) {
@@ -440,6 +443,7 @@ class InspectorController extends DisposableController
       );
     } else {
       final ready = await inspectorService.isWidgetTreeReady();
+      _rootDirectories = await inspectorService.inferPubRootDirectoryIfNeeded();
       if (_disposed) return;
       flutterAppFrameReady = ready;
       if (isActive && ready) {
