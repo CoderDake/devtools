@@ -25,6 +25,7 @@ class ResolvedUriManager {
   /// [isolateId] The id of the isolate that the [uris] were generated on.
   /// [uris] List of uris to fetch package uris for.
   Future<void> fetchPackageUris(String isolateId, List<String> uris) async {
+    if (uris.isEmpty) return;
     if (_packagePathMappings != null) {
       final packageUris =
           (await serviceManager.service!.lookupPackageUris(isolateId, uris))
@@ -48,6 +49,7 @@ class ResolvedUriManager {
   /// [isolateId] The id of the isolate that the [packageUris] were generated on.
   /// [packageUris] List of uris to fetch full file paths for.
   Future<void> fetchFileUris(String isolateId, List<String> packageUris) async {
+    if (packageUris.isEmpty) return;
     if (_packagePathMappings != null) {
       final fileUris = (await serviceManager.service!
               .lookupResolvedPackageUris(isolateId, packageUris))
