@@ -48,11 +48,18 @@ void main() async {
         final offlineTimelineData =
             OfflinePerformanceData.parse(offlinePerformanceDataJson);
         await performanceController.processOfflineData(offlineTimelineData);
+        final result = isPerformanceDataEqual(
+          performanceController.data!,
+          offlineTimelineData,
+        );
+        if (!result) {
+          print(
+              "Dake A: ${isPerformanceDataEqualPrinter(performanceController.data!)}");
+          print(
+              "Dake B: ${isPerformanceDataEqualPrinter(offlineTimelineData)}");
+        }
         expect(
-          isPerformanceDataEqual(
-            performanceController.data!,
-            offlineTimelineData,
-          ),
+          result,
           isTrue,
         );
         expect(
@@ -246,4 +253,14 @@ bool isPerformanceDataEqual(PerformanceData a, PerformanceData b) {
       a.selectedEvent!.name == b.selectedEvent!.name &&
       a.selectedEvent!.time == b.selectedEvent!.time &&
       a.cpuProfileData == b.cpuProfileData;
+}
+
+String isPerformanceDataEqualPrinter(PerformanceData a) {
+  return {
+    'traceEvents': a.traceEvents,
+    'frames': a.frames,
+    'selectedFrame': a.selectedFrame,
+    'selectedEvent': a.selectedEvent,
+    'cpuProfileData': a.cpuProfileData?.toJson,
+  }.toString();
 }
