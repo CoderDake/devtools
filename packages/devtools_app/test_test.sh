@@ -21,7 +21,7 @@ mkdir -p $FAIL_DIR
   do
     SEED=$RANDOM
     TEST_NAME=.tmp_test.log
-    flutter test test/performance/performance_controller_test.dart --test-randomize-ordering-seed=$SEED> $TEST_NAME
+    flutter test --test-randomize-ordering-seed=$SEED> $TEST_NAME
     if [ $? -eq 0 ]; then
       PASS_COUNT=$((PASS_COUNT+1))
       mv $TEST_NAME $PASS_DIR/test-$i.log
