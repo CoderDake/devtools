@@ -152,8 +152,6 @@ class FlutterTestEnvironment {
     }
 
     if (_beforeFinalTearDown != null) await _beforeFinalTearDown!();
-    await Future.delayed(Duration(seconds: 20));
-    serviceManager.manuallyDisconnect();
 
     await _service.allFuturesCompleted.timeout(
       const Duration(seconds: 20),
@@ -163,6 +161,9 @@ class FlutterTestEnvironment {
             '  ${_service.activeFutures.map((tf) => tf.name).join('\n  ')}';
       },
     );
+
+    serviceManager.manuallyDisconnect();
+
     await _flutter!.stop();
 
     _flutter = null;
