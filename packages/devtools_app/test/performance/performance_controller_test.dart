@@ -35,7 +35,9 @@ void main() async {
       // This flag should never be turned on in production.
       expect(debugSimpleTrace, isFalse);
     });
-
+    setUpAll(() async {
+      await env.setupEnvironment();
+    });
     tearDownAll(() async {
       await env.tearDownEnvironment(force: true);
     });
@@ -43,7 +45,7 @@ void main() async {
     test(
       'processOfflineData',
       () async {
-        await env.setupEnvironment();
+        // await env.setupEnvironment();
         offlineController.enterOfflineMode();
         final offlineTimelineData =
             OfflinePerformanceData.parse(offlinePerformanceDataJson);
@@ -84,7 +86,7 @@ void main() async {
     );
 
     test('frame selection', () async {
-      await env.setupEnvironment();
+      // await env.setupEnvironment();
 
       final frame0 = testFrame0.shallowCopy()
         ..setEventFlow(goldenUiTimelineEvent)
@@ -166,7 +168,7 @@ void main() async {
     });
 
     test('add frame', () async {
-      await env.setupEnvironment();
+      // await env.setupEnvironment();
       await performanceController.clearData();
 
       final data = performanceController.data!;
@@ -180,7 +182,7 @@ void main() async {
     });
 
     test('matchesForSearch', () async {
-      await env.setupEnvironment();
+      // await env.setupEnvironment();
 
       // Verify an empty list is returned for bad input.
       expect(performanceController.matchesForSearch(''), isEmpty);
@@ -203,7 +205,7 @@ void main() async {
     });
 
     test('search query searches through previous matches', () async {
-      await env.setupEnvironment();
+      // await env.setupEnvironment();
 
       await performanceController.clearData();
       performanceController.addTimelineEvent(goldenUiTimelineEvent..deepCopy());
