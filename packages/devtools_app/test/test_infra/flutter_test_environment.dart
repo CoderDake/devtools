@@ -152,7 +152,7 @@ class FlutterTestEnvironment {
     }
 
     if (_beforeFinalTearDown != null) await _beforeFinalTearDown!();
-
+    await Future.delayed(Duration(seconds: 20));
     serviceManager.manuallyDisconnect();
 
     await _service.allFuturesCompleted.timeout(
