@@ -85,6 +85,7 @@ class InspectorPreferencesController extends DisposableController
   InspectorService? get _inspectorService =>
       serviceManager.inspectorService as InspectorService?;
 
+  final pubRootDirectoriesEnabled = false;
   final _hoverEvalMode = ValueNotifier<bool>(false);
   final _customPubRootDirectories = ListValueNotifier<String>([]);
   final _customPubRootDirectoriesAreBusy = ValueNotifier<bool>(false);
@@ -130,6 +131,8 @@ class InspectorPreferencesController extends DisposableController
   }
 
   Future<void> _initCustomPubRootDirectories() async {
+    if (pubRootDirectoriesEnabled) return;
+
     autoDisposeStreamSubscription(
       serviceManager.onConnectionAvailable
           .listen(_handleConnectionToNewService),

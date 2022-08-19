@@ -357,20 +357,22 @@ class FlutterInspectorSettingsDialog extends StatelessWidget {
                   'Hovering over any widget displays its properties and values.',
               gaItem: analytics_constants.inspectorHoverEvalMode,
             ),
-            const SizedBox(height: denseSpacing),
-            ...dialogSubHeader(Theme.of(context), 'Package Directories'),
-            Text(
-              'Widgets in these directories will show up in your summary tree.',
-              style: theme.subtleTextStyle,
-            ),
-            Text(
-              '(e.g. /absolute/path/to/myPackage)',
-              style: theme.subtleTextStyle,
-            ),
-            const SizedBox(height: denseSpacing),
-            Expanded(
-              child: PubRootDirectorySection(),
-            ),
+            if (preferences.inspector.pubRootDirectoriesEnabled) ...[
+              const SizedBox(height: denseSpacing),
+              ...dialogSubHeader(Theme.of(context), 'Package Directories'),
+              Text(
+                'Widgets in these directories will show up in your summary tree.',
+                style: theme.subtleTextStyle,
+              ),
+              Text(
+                '(e.g. /absolute/path/to/myPackage)',
+                style: theme.subtleTextStyle,
+              ),
+              const SizedBox(height: denseSpacing),
+              Expanded(
+                child: PubRootDirectorySection(),
+              ),
+            ]
           ],
         ),
       ),
