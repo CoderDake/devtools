@@ -112,6 +112,7 @@ class HoverCard {
     required Widget contents,
     required double width,
     required Offset position,
+    required HoverCardTooltipController hoverCardTooltipController,
     String? title,
     double? maxCardHeight,
   }) {
@@ -128,7 +129,8 @@ class HoverCard {
           top: position.dy,
           child: MouseRegion(
             onExit: (_) {
-              remove();
+              hoverCardTooltipController.removeHoverCard(this);
+              // remove();
             },
             onEnter: (_) {
               _hasMouseEntered = true;
@@ -180,6 +182,7 @@ class HoverCard {
     required PointerHoverEvent event,
     required Widget contents,
     required double width,
+    required HoverCardTooltipController hoverCardTooltipController,
     String? title,
   }) : this(
           context: context,
@@ -190,6 +193,7 @@ class HoverCard {
             event.position.dy + _hoverYOffset,
           ),
           title: title,
+          hoverCardTooltipController: hoverCardTooltipController,
         );
 
   int? freshnessToken;
@@ -257,10 +261,12 @@ class HoverCardTooltipController {
   }
 
   /// Remove the [HoverCard] being displayed, if there is one.
-  void removeHoverCard() {
-    _invalidateFreshnessToken();
-    _hoverCard?.remove();
-    _hoverCard = null;
+  void removeHoverCard(HoverCard card) {
+    if (_hoverCard == card) {
+      _invalidateFreshnessToken();
+      _hoverCard?.remove();
+      _hoverCard = null;
+    }
   }
 
   /// Create increment the freshness token and return the new value.
@@ -271,6 +277,11 @@ class HoverCardTooltipController {
   /// Helper for incrementing the freshness token.
   void _invalidateFreshnessToken() {
     _newFreshnessToken();
+  }
+
+  void dispose() {
+    _hoverCard?.remove();
+    _hoverCard = null;
   }
 
   /// Check's that a [hoverCard.freshnessToken] is the same as the active
@@ -376,6 +387,7 @@ class _HoverCardTooltipState extends State<HoverCardTooltip> {
           contents: const CenteredCircularProgressIndicator(),
           width: HoverCardTooltip.defaultHoverWidth,
           event: event,
+          hoverCardTooltipController: widget.hoverCardTooltipController,
         );
 
         widget.hoverCardTooltipController.set(
@@ -413,6 +425,7 @@ class _HoverCardTooltipState extends State<HoverCardTooltip> {
               contents: hoverCardData.contents,
               width: hoverCardData.width,
               event: event,
+              hoverCardTooltipController: widget.hoverCardTooltipController,
             ),
           );
         } else {
@@ -423,6 +436,7 @@ class _HoverCardTooltipState extends State<HoverCardTooltip> {
               contents: hoverCardData.contents,
               width: hoverCardData.width,
               position: _calculateTooltipPosition(hoverCardData.width),
+              hoverCardTooltipController: widget.hoverCardTooltipController,
             ),
           );
         }
@@ -453,7 +467,7 @@ class _HoverCardTooltipState extends State<HoverCardTooltip> {
   void dispose() {
     _showTimer?.cancel();
     _removeTimer?.cancel();
-    widget.hoverCardTooltipController.removeHoverCard();
+    widget.hoverCardTooltipController.dispose();
     widget.disposable?.dispose();
     super.dispose();
   }
