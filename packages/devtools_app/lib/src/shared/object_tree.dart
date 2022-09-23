@@ -79,18 +79,6 @@ Future<void> buildVariablesTree(
       }
     }
   }
-  final existingNames = <String>{};
-  for (var child in variable.children) {
-    final name = child.name;
-    if (name != null && name.isNotEmpty) {
-      existingNames.add(name);
-      if (!isPrivate(name)) {
-        // Assume private and public names with the same name reference the same
-        // data so showing both is not useful.
-        existingNames.add('_$name');
-      }
-    }
-  }
 
   if (variable.childCount > DartObjectNode.MAX_CHILDREN_IN_GROUPING) {
     final numChildrenInGrouping =
@@ -131,6 +119,18 @@ Future<void> buildVariablesTree(
           // Check fields last, as all instanceRefs may have a non-null fields
           // with no entries.
         } else if (result.fields != null) {
+          final existingNames = <String>{};
+          for (var child in variable.children) {
+            final name = child.name;
+            if (name != null && name.isNotEmpty) {
+              existingNames.add(name);
+              if (!isPrivate(name)) {
+                // Assume private and public names with the same name reference the same
+                // data so showing both is not useful.
+                existingNames.add('_$name');
+              }
+            }
+          }
           variable.addAllChildren(
             _createVariablesForFields(
               result,
