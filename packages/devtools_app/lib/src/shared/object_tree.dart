@@ -154,14 +154,18 @@ Future<void> buildVariablesTree(
       );
       variable.addChild(childrenNode);
       if (service != null && isolateRef != null) {
-        await addExpandableChildren(
-          childrenNode,
-          await _createVariablesForDiagnostics(
+        unawaited(
+          _createVariablesForDiagnostics(
             service,
             diagnosticChildren,
             isolateRef,
+          ).then(
+            (variables) async => await addExpandableChildren(
+              childrenNode,
+              variables,
+              expandAll: expandAll,
+            ),
           ),
-          expandAll: expandAll,
         );
       }
     }
@@ -212,8 +216,7 @@ Future<void> buildVariablesTree(
       tasks.add(_maybeUpdateRef(child));
     }
     if (tasks.isNotEmpty) {
-      await Future.wait(tasks);
-      unawaited(group?.dispose());
+      unawaited(Future.wait(tasks).then((_) async => group?.dispose()));
     }
   }
   variable.treeInitializeComplete = true;
