@@ -250,7 +250,7 @@ String stripPreReleases(String currentVersion) {
   final devVerMatch =
       RegExp(r'^(?<semver>\d+\.\d+\.\d+).*$').firstMatch(currentVersion);
   if (devVerMatch == null) {
-    throw 'Invalid version, could not increment dev version';
+    throw 'Could not strip pre-releases from version: $currentVersion';
   } else {
     return devVerMatch.namedGroup('semver')!;
   }
@@ -323,29 +323,59 @@ class AutoUpdateCommand extends Command {
   final name = 'auto';
   @override
   final description = 'Automatically update devtools to a new version.';
-
   AutoUpdateCommand() {
-    argParser.addOption('type',
-        abbr: 't',
-        allowed: ['release', 'dev', 'patch', 'minor', 'major'],
-        allowedHelp: {
-          'release': 'strips any pre-release versions from the version.',
-          'dev':
-              'bumps the version to the next dev pre-release value (minor by default).',
-          'patch':
-              'bumps the version to the next patch value, and sets the dev version to 0.',
-          'minor':
-              'bumps the version to the next minor value, and sets the dev version to 0.',
-          'major':
-              'bumps the version to the next major value, and sets the dev version to 0.',
-        },
-        mandatory: true,
-        help: 'Bumps the devtools version by the selected type.');
+    argParser.addOption(
+      'type',
+      abbr: 't',
+      allowed: ['release', 'dev', 'patch', 'minor', 'major'],
+      allowedHelp: {
+        'release': [
+          'strips any pre-release versions from the version.',
+          'Examples:',
+          '\t1.2.3       => 1.2.3',
+          '\t1.2.3-dev.4 => 1.2.3',
+        ].join('\n'),
+        'dev': [
+          'bumps the version to the next dev pre-release value (minor by default).',
+          'Examples:',
+          '\t1.2.3       => 1.2.3-dev.0',
+          '\t1.2.3-dev.4 => 1.2.3-dev.5',
+        ].join('\n'),
+        'patch': [
+          'bumps the version to the next patch value.',
+          'Examples:',
+          '\t1.2.3       => 1.2.4',
+          '\t1.2.3-dev.4 => 1.2.4',
+        ].join('\n'),
+        'minor': [
+          'bumps the version to the next minor value.',
+          'Examples:',
+          '\t1.2.3       => 1.3.0',
+          '\t1.2.3-dev.4 => 1.3.0',
+        ].join('\n'),
+        'major': [
+          'bumps the version to the next major value.',
+          'Examples:',
+          '\t1.2.3       => 2.0.0',
+          '\t1.2.3-dev.4 => 2.0.0',
+        ].join('\n'),
+      },
+      mandatory: true,
+      help: 'Bumps the devtools version by the selected type.',
+    );
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'd',
+      defaultsTo: false,
+      help: 'Displays the version change that would happen, without performing '
+          'it.',
+    );
   }
 
   @override
   void run() async {
     final type = argResults!['type'].toString();
+    final isDryRun = argResults!['dry-run'];
     final currentVersion = versionFromPubspecFile();
     String? newVersion;
     if (currentVersion == null) {
@@ -360,16 +390,16 @@ class AutoUpdateCommand extends Command {
         break;
       default:
         newVersion = incrementVersionByType(currentVersion, type);
-
-        // Doing a proper version update so cycle the release notes
-        await resetReleaseNotes(
-            newVersion: SemanticVersion.parse(currentVersion));
-
         if (newVersion == null) {
           throw 'Failed to determine the newVersion.';
         }
-        newVersion = incrementDevVersion(newVersion);
     }
+    print('Updating from $currentVersion to $newVersion');
+
+    if (isDryRun) {
+      return;
+    }
+
     performTheVersionUpdate(
       currentVersion: currentVersion,
       newVersion: newVersion,
