@@ -84,7 +84,7 @@ class InspectorScreenBodyState extends State<InspectorScreenBody>
 
   SearchTargetType searchTarget = SearchTargetType.widget;
 
-  static const summaryTreeKey = Key('Summary Tree');
+  static const summaryTreeKey = Key('Summary Tree DAKE');
   static const detailsTreeKey = Key('Details Tree');
   static const minScreenWidthForTextBeforeScaling = 900.0;
   static const unscaledIncludeRefreshTreeWidth = 1255.0;
