@@ -49,7 +49,9 @@ Future<void> performTheVersionUpdate(
 
   print('Updating CHANGELOG to version $newVersion...');
   writeVersionToChangelog(File('CHANGELOG.md'), newVersion);
-  resetReleaseNotes();
+  resetReleaseNotes(
+    version: newVersion,
+  );
 
   print('Updating index.html to version $newVersion...');
   writeVersionToIndexHtml(
@@ -61,7 +63,9 @@ Future<void> performTheVersionUpdate(
   });
 }
 
-Future<void> resetReleaseNotes() async {
+Future<void> resetReleaseNotes({
+  required String version,
+}) async {
   // Clear out the current notes
   final imagesDir = Directory('./tool/release_notes/images');
   if (imagesDir.existsSync()) {
@@ -74,8 +78,9 @@ Future<void> resetReleaseNotes() async {
   }
 
   final templateFile =
-      File('./tool/release_notes/helpers/release-notes-template.md');
+      File('./tool/release_notes/helpers/release_notes_template.md');
   templateFile.copy('./tool/release_notes/NEXT_RELEASE_NOTES.md');
+  // TODO: Replace <number> with new version
 }
 
 String? incrementVersionByType(String version, String type) {
