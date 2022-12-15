@@ -69,11 +69,16 @@ Future<void> performTheVersionUpdate({
 Future<void> resetReleaseNotes({
   required String version,
 }) async {
+  print('Resetting the release notes');
+
   // Clear out the current notes
   final imagesDir = Directory('./tool/release_notes/images');
   if (imagesDir.existsSync()) {
     await imagesDir.delete(recursive: true);
   }
+
+  await File('./tool/release_notes/images/.gitkeep').create();
+
   final currentReleaseNotesFile =
       File('./tool/release_notes/NEXT_RELEASE_NOTES.md');
   if (currentReleaseNotesFile.existsSync()) {
@@ -93,7 +98,7 @@ Future<void> resetReleaseNotes({
   final templateFile =
       File('./tool/release_notes/helpers/release_notes_template.md');
   final templateFileContents = await templateFile.readAsString();
-  templateFile.writeAsString(
+  currentReleaseNotesFile.writeAsString(
     templateFileContents.replaceAll(
       RegExp(r'<number>'),
       normalizedVersionNumber,
