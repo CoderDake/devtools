@@ -9,7 +9,7 @@ Dart & Flutter DevTools - A Suite of Performance Tools for Dart and Flutter
 TODO: Remove this section if there are not any general updates.
 
 ## Inspector updates
-TODO: Remove this section if there are not any general updates.
+- We are making a change 
 
 ## Performance updates
 TODO: Remove this section if there are not any general updates.
