@@ -35,7 +35,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PULL_NUMBER: ${{steps.get-pull-request-number.outputs.PULL_REQUEST_NUMBER}}
         run: |
-          PULLS_RESPONSE=$(gh api /repos/flutter/devtools/pulls/$PULL_NUMBER)
+          PULLS_RESPONSE=$(gh api /repos/${{GITHUB_REPOSITORY}}/pulls/$PULL_NUMBER)
           DESCRIPTION_BODY=$(echo $PULLS_RESPONSE | jq '.body')
           echo $DESCRIPTION_BODY
           if $(echo $DESCRIPTION_BODY | grep -Eq "RELEASE_NOTE_EXCEPTION="); then
