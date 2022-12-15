@@ -24,7 +24,8 @@ void main(List<String> args) async {
     'A program for updating the devtools version',
   )
     ..addCommand(ManualUpdateCommand())
-    ..addCommand(AutoUpdateCommand());
+    ..addCommand(AutoUpdateCommand())
+    ..addCommand(CurrentVersionCommand());
   runner.run(args).catchError((error) {
     if (error is! UsageException) throw error;
     print(error);
@@ -33,8 +34,11 @@ void main(List<String> args) async {
   return;
 }
 
-Future<void> performTheVersionUpdate(
-    {required String currentVersion, required String newVersion}) async {
+Future<void> performTheVersionUpdate({
+  required String currentVersion,
+  required String newVersion,
+  bool modifyChangeLog = true,
+}) async {
   print('Updating pubspecs from $currentVersion to version $newVersion...');
 
   for (final pubspec in _pubspecs) {
@@ -47,11 +51,10 @@ Future<void> performTheVersionUpdate(
     newVersion,
   );
 
-  print('Updating CHANGELOG to version $newVersion...');
-  writeVersionToChangelog(File('CHANGELOG.md'), newVersion);
-  resetReleaseNotes(
-    version: newVersion,
-  );
+  if (modifyChangeLog) {
+    print('Updating CHANGELOG to version $newVersion...');
+    writeVersionToChangelog(File('CHANGELOG.md'), newVersion);
+  }
 
   print('Updating index.html to version $newVersion...');
   writeVersionToIndexHtml(
@@ -77,10 +80,25 @@ Future<void> resetReleaseNotes({
     await currentReleaseNotesFile.delete();
   }
 
+  // Normalize the version number so that it onl
+  final semVerMatch = RegExp(r'^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)')
+      .firstMatch(version);
+  if (semVerMatch == null) {
+    throw 'Version format is unexpected';
+  }
+  var major = int.parse(semVerMatch.namedGroup('major')!, radix: 10);
+  var minor = int.parse(semVerMatch.namedGroup('minor')!, radix: 10);
+  final normalizedVersionNumber = '$major.$minor.0';
+
   final templateFile =
       File('./tool/release_notes/helpers/release_notes_template.md');
-  templateFile.copy('./tool/release_notes/NEXT_RELEASE_NOTES.md');
-  // TODO: Replace <number> with new version
+  final templateFileContents = await templateFile.readAsString();
+  templateFile.writeAsString(
+    templateFileContents.replaceAll(
+      RegExp(r'<number>'),
+      normalizedVersionNumber,
+    ),
+  );
 }
 
 String? incrementVersionByType(String version, String type) {
@@ -308,6 +326,18 @@ class ManualUpdateCommand extends Command {
   }
 }
 
+class CurrentVersionCommand extends Command {
+  @override
+  final name = 'current-version';
+  @override
+  final description = 'Print the current devtools_app version.';
+
+  @override
+  void run() async {
+    print(versionFromPubspecFile());
+  }
+}
+
 class AutoUpdateCommand extends Command {
   @override
   final name = 'auto';
@@ -367,6 +397,7 @@ class AutoUpdateCommand extends Command {
     final type = argResults!['type'].toString();
     final isDryRun = argResults!['dry-run'];
     final currentVersion = versionFromPubspecFile();
+    bool modifyChangeLog = true;
     String? newVersion;
     if (currentVersion == null) {
       throw 'Could not automatically determine current version.';
@@ -377,6 +408,7 @@ class AutoUpdateCommand extends Command {
         break;
       case 'dev':
         newVersion = incrementDevVersion(currentVersion);
+        modifyChangeLog = false;
         break;
       default:
         newVersion = incrementVersionByType(currentVersion, type);
@@ -393,6 +425,13 @@ class AutoUpdateCommand extends Command {
     performTheVersionUpdate(
       currentVersion: currentVersion,
       newVersion: newVersion,
+      modifyChangeLog: modifyChangeLog,
     );
+    if (['minor', 'major'].contains(type)) {
+      // Only cycle the release notes when doing a minor or major version bump
+      resetReleaseNotes(
+        version: newVersion,
+      );
+    }
   }
 }
