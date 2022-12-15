@@ -55,31 +55,3 @@ jobs:
             echo "::error file=$CURRENT_RELEASE_JSON_FILE_PATH,line=0,col=0,endColumn=0,title='Release Notes Weren\'t Modified'::Please add a release note entry or a reason to your description using: \`RELEASE_NOTE_EXCEPTION=[reason goes here]\`"
             exit 1
           fi
-
-  release-note-validation:
-    runs-on: ubuntu-latest
-    name: Release Note Validation
-    steps:
-      - name: Get Pull Request Number
-        id: get-pull-request-number
-        run: |
-          PULL_REQUEST_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          echo "PULL_REQUEST_NUMBER=$PULL_REQUEST_NUMBER" >> $GITHUB_OUTPUT
-      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
-      - uses: actions/checkout@v3
-      - name: Verify the release note integrity
-        run: |
-          cd tool/
-          dart pub get
-          dart release_note_helper.dart verify -f "../$CURRENT_RELEASE_JSON_FILE_PATH"
-
-      - name: Check PR Urls
-        env:
-          PULL_NUMBER: ${{steps.get-pull-request-number.outputs.PULL_REQUEST_NUMBER}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd tool/
-          dart pub get
-          dart ./release_note_helper.dart pr-url \
-            -f "../$CURRENT_RELEASE_JSON_FILE_PATH" \
-            -u https://github.com/flutter/devtools/pull/$PULL_NUMBER 
