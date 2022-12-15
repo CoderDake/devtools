@@ -8,8 +8,6 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:devtools_shared/devtools_shared.dart';
 
-import 'lib/release_note_classes.dart' as rn;
-
 // This script must be executed from the top level devtools/ directory.
 // TODO(kenz): If changes are made to this script, first consider refactoring to
 // use https://github.com/dart-lang/pubspec_parse.
@@ -51,6 +49,7 @@ Future<void> performTheVersionUpdate(
 
   print('Updating CHANGELOG to version $newVersion...');
   writeVersionToChangelog(File('CHANGELOG.md'), newVersion);
+  resetReleaseNotes();
 
   print('Updating index.html to version $newVersion...');
   writeVersionToIndexHtml(
@@ -62,35 +61,21 @@ Future<void> performTheVersionUpdate(
   });
 }
 
-Future<void> resetReleaseNotes({
-  required SemanticVersion newVersion,
-}) async {
-  final release = rn.Release(version: newVersion, sections: [
-    rn.ReleaseSection(name: 'General updates'),
-    rn.ReleaseSection(name: 'Inspector update'),
-    rn.ReleaseSection(name: 'Performance updates'),
-    rn.ReleaseSection(name: 'CPU profiler updates'),
-    rn.ReleaseSection(name: 'Memory updates'),
-    rn.ReleaseSection(name: 'Network profiler updates'),
-    rn.ReleaseSection(name: 'Logging updates'),
-    rn.ReleaseSection(name: 'App size tool updates'),
-  ]);
-
+Future<void> resetReleaseNotes() async {
   // Clear out the current notes
-  final releaseNotesDir = Directory('./tool/release_notes/');
-  if (releaseNotesDir.existsSync()) {
-    releaseNotesDir.delete(recursive: true);
+  final imagesDir = Directory('./tool/release_notes/images');
+  if (imagesDir.existsSync()) {
+    await imagesDir.delete(recursive: true);
   }
-  final filesDir = Directory('./tool/release_notes/files');
+  final currentReleaseNotesFile =
+      File('./tool/release_notes/NEXT_RELEASE_NOTES.md');
+  if (currentReleaseNotesFile.existsSync()) {
+    await currentReleaseNotesFile.delete();
+  }
 
-  await releaseNotesDir.create();
-  await filesDir.create();
-
-  // populate a blank release notes file
-  JsonEncoder encoder = JsonEncoder.withIndent('  ');
-  await File('./tool/release_notes/release_notes.json').writeAsString(
-    encoder.convert(release),
-  );
+  final templateFile =
+      File('./tool/release_notes/helpers/release-notes-template.md');
+  templateFile.copy('./tool/release_notes/NEXT_RELEASE_NOTES.md');
 }
 
 String? incrementVersionByType(String version, String type) {
