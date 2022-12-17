@@ -1,3 +1,6 @@
+## 2.22.0
+TODO: update changelog
+
 ## 2.21.0
 * UX improvements for diff [#4958](https://github.com/flutter/devtools/pull/4958)
 * Rename old integration_test folder to legacy_integration_tests [#4959](https://github.com/flutter/devtools/pull/4959)
