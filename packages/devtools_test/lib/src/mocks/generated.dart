@@ -36,8 +36,14 @@ import 'package:vm_service/vm_service.dart';
   FuncObject,
   ScriptObject,
   LibraryObject,
+  ICDataObject,
   CodeViewController,
   BreakpointManager,
   EvalService,
+  BannerMessagesController,
+  Isolate,
+  IsolateState,
+  Obj,
+  VM,
 ])
 void main() {}
