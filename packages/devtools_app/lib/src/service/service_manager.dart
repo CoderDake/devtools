@@ -203,7 +203,15 @@ class ServiceConnectionManager {
 
     _appState?.dispose();
     _appState = AppState(isolateManager.selectedIsolate);
-
+    await service.streamListen('ToolEvent');
+    service.onEvent('ToolEvent').listen(
+      (event) {
+        // This is for debug output
+        print(
+          'TOPGUN:  data: ${event.extensionData} kind:${event.extensionKind}',
+        );
+      },
+    );
     // It is critical we call vmServiceOpened on each manager class before
     // performing any async operations. Otherwise, we may get end up with
     // race conditions where managers cannot listen for events soon enough.

@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:vm_service/vm_service.dart';
 
 import '../screens/debugger/codeview_controller.dart';
 import '../screens/debugger/debugger_screen.dart';
@@ -287,6 +289,7 @@ class MethodAndSourceDisplay extends StatelessWidget {
             object: script,
             textBuilder: (_) => sourceDisplay,
             onTap: (e) {
+              unawaited(_toolEventNavigate(packageUri, sourceLine!, 1));
               DevToolsRouterDelegate.of(context).navigate(
                 DebuggerScreen.id,
                 const {},
@@ -328,6 +331,32 @@ class MethodAndSourceDisplay extends StatelessWidget {
     }
     return richText;
   }
+}
+
+Future<void> _toolEventNavigate(String packageUri, int line, int column) async {
+  final isolateId = serviceManager.isolateManager.selectedIsolate.value!.id!;
+  await serviceManager.resolvedUriManager
+      .fetchPackageUris(isolateId, [packageUri]);
+  String? fileUri;
+  if (packageUri.startsWith('dart:')) {
+    fileUri = packageUri;
+  } else {
+    fileUri =
+        serviceManager.resolvedUriManager.lookupFileUri(isolateId, packageUri);
+  }
+
+  // TODO: add a warning log here
+  // Attempt to the packageUri if we couldn't get a fileUri.
+  fileUri ??= packageUri;
+
+  await serviceManager.service
+      ?.postEvent('ToolEvent', 'navigate', <String, Object>{
+    'fileUri':
+        fileUri, // 'fileUri': location.file, // URI file path of the location.
+    'line': line, // 'line': location.line, // 1-based line number.
+    'column': column, // 'column': location.column, // 1-based column number.
+    'source': 'dart.devtools',
+  });
 }
 
 String uriWithSourceLine(String uri, int? sourceLine) =>

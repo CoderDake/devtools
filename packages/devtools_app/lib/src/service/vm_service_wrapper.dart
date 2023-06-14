@@ -572,6 +572,17 @@ class VmServiceWrapper implements VmService {
     );
   }
 
+  Future<void> postEvent(
+    String stream,
+    String eventKind,
+    Map<String, Object> eventData,
+  ) {
+    return trackFuture(
+      'postEvent',
+      _vmService.postEvent(stream, eventKind, eventData),
+    );
+  }
+
   @override
   Future<Success> resume(String isolateId, {String? step, int? frameIndex}) {
     return trackFuture(
