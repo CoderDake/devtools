@@ -95,7 +95,7 @@ jobs:
           BRANCH_NAME="auto-bump-$(date +%s)"
           # Stage the file, commit and push
           git checkout -b "$BRANCH_NAME"
-          git commit -a -m "$COMMIT_MESSAGE"
+          git commit -a -m "$COMMIT_MESSAGE" --author="DartDevtoolWorkflowBot <dart-devtool-workflow-bot@google.com>"
           git push -u origin "$BRANCH_NAME"
 
           if [ "$IS_DRAFT" == "true" ]; then
