@@ -603,6 +603,16 @@ class InspectorController extends DisposableController
     _refreshRateLimiter.scheduleRequest();
   }
 
+  bool identicalDiagnosticsNodes(
+    RemoteDiagnosticsNode a,
+    RemoteDiagnosticsNode b,
+  ) {
+    if (a == b) {
+      return true;
+    }
+    return a.dartDiagnosticRef == b.dartDiagnosticRef;
+  }
+
   @override
   void onInspectorSelectionChanged() {
     if (!visibleToUser) {
