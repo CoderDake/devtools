@@ -86,6 +86,15 @@ class ServiceConnectionManager {
   AppState? _appState;
 
   Future<void> _beforeOpenVmService(VmServiceWrapper? service) async {
+    await service!.streamListen('ToolEvent');
+    service!.onEvent('ToolEvent').listen(
+      (event) {
+        // This is for debug output
+        print(
+          'TOPGUN:  data: ${event.extensionData} kind:${event.extensionKind}',
+        );
+      },
+    );
     consoleService.vmServiceOpened(service!);
     resolvedUriManager.vmServiceOpened();
     await vmFlagManager.vmServiceOpened(service);
@@ -102,15 +111,6 @@ class ServiceConnectionManager {
   }
 
   Future<void> _afterOpenVmService(VmServiceWrapper? service) async {
-    await service.streamListen('ToolEvent');
-    service.onEvent('ToolEvent').listen(
-      (event) {
-        // This is for debug output
-        print(
-          'TOPGUN:  data: ${event.extensionData} kind:${event.extensionKind}',
-        );
-      },
-    );
     // Re-initialize isolates when VM developer mode is enabled/disabled to
     // display/hide system isolates.
     preferences.vmDeveloperModeEnabled

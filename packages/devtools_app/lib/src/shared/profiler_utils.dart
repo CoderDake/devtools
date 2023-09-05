@@ -334,22 +334,22 @@ class MethodAndSourceDisplay extends StatelessWidget {
 }
 
 Future<void> _toolEventNavigate(String packageUri, int line, int column) async {
-  final isolateId = serviceManager.isolateManager.selectedIsolate.value!.id!;
-  await serviceManager.resolvedUriManager
+  final isolateId = serviceConnection.serviceManager.isolateManager.selectedIsolate.value!.id!;
+  await serviceConnection.resolvedUriManager
       .fetchPackageUris(isolateId, [packageUri]);
   String? fileUri;
   if (packageUri.startsWith('dart:')) {
     fileUri = packageUri;
   } else {
     fileUri =
-        serviceManager.resolvedUriManager.lookupFileUri(isolateId, packageUri);
+        serviceConnection.resolvedUriManager.lookupFileUri(isolateId, packageUri);
   }
 
   // TODO: add a warning log here
   // Attempt to the packageUri if we couldn't get a fileUri.
   fileUri ??= packageUri;
 
-  await serviceManager.service
+  await serviceConnection.serviceManager.service
       ?.postEvent('ToolEvent', 'navigate', <String, Object>{
     'fileUri':
         fileUri, // 'fileUri': location.file, // URI file path of the location.
