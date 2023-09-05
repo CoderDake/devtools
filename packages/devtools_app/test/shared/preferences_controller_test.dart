@@ -3,19 +3,23 @@
 // found in the LICENSE file.
 
 import 'package:devtools_app/devtools_app.dart';
+import 'package:devtools_app_shared/utils.dart';
 import 'package:devtools_test/devtools_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../test_infra/flutter_test_storage.dart';
 
 void main() {
-  setGlobal(ServiceConnectionManager, FakeServiceManager());
+  setGlobal(ServiceConnectionManager, FakeServiceConnectionManager());
 
   group('$PreferencesController', () {
     late PreferencesController controller;
 
     setUp(() {
-      setGlobal(DevToolsExtensionPoints, ExternalDevToolsExtensionPoints());
+      setGlobal(
+        DevToolsEnvironmentParameters,
+        ExternalDevToolsEnvironmentParameters(),
+      );
       controller = PreferencesController();
     });
 
@@ -85,7 +89,7 @@ void main() {
         await controller.init();
         expect(
           controller.hoverEvalModeEnabled.value,
-          serviceManager.inspectorService!.hoverEvalModeEnabledByDefault,
+          serviceConnection.inspectorService!.hoverEvalModeEnabledByDefault,
         );
       });
 

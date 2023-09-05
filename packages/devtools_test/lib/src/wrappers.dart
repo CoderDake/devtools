@@ -3,12 +3,12 @@
 // found in the LICENSE file.
 
 import 'package:devtools_app/devtools_app.dart';
+import 'package:devtools_app_shared/ui.dart';
+import 'package:devtools_app_shared/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-
-import 'mocks/generated.mocks.dart';
 
 /// The RouterDelegate must use the same NavigatorKey when building in order
 /// for widget state to be preserved.
@@ -58,16 +58,12 @@ Widget wrapWithControllers(
   ProfilerScreenController? profiler,
   DebuggerController? debugger,
   NetworkController? network,
-  BannerMessagesController? bannerMessages,
   AppSizeController? appSize,
   AnalyticsController? analytics,
   ReleaseNotesController? releaseNotes,
   VMDeveloperToolsController? vmDeveloperTools,
 }) {
   final _providers = [
-    Provider<BannerMessagesController>.value(
-      value: bannerMessages ?? MockBannerMessagesController(),
-    ),
     if (inspector != null)
       Provider<InspectorController>.value(value: inspector),
     if (logging != null) Provider<LoggingController>.value(value: logging),

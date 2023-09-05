@@ -57,13 +57,24 @@ dart --disable-analytics
 flutter --version
 dart --version
 
-# Generate code.
+# Fetch dependencies
 pushd packages/devtools_app
+flutter pub get
+popd
+pushd packages/devtools_app_shared
+flutter pub get
+popd
+pushd packages/devtools_extensions
+flutter pub get
+popd
+pushd packages/devtools_shared
 flutter pub get
 popd
 pushd packages/devtools_test
 flutter pub get
 popd
+
+# Generate code.
 bash tool/generate_code.sh
 
 # Change the CI to the packages/devtools_app directory.
@@ -86,11 +97,22 @@ if [ "$BOT" = "main" ]; then
     # Analyze the code
     repo_tool analyze
 
-    # Test the devtools_shared package tests on the main bot.
     popd
+
+    # Test the `devtools_app_shared`, `devtools_shared` and `devtools_extensions` package tests on the
+    # main bot.
+    pushd packages/devtools_app_shared
+    echo `pwd`
+    flutter test test/
+    popd
+
     pushd packages/devtools_shared
     echo `pwd`
+    flutter test test/
+    popd
 
+    pushd packages/devtools_extensions
+    echo `pwd`
     flutter test test/
     popd
 
@@ -137,7 +159,8 @@ elif [[ "$BOT" == "test_ddc" || "$BOT" == "test_dart2js" ]]; then
 # for a DDC build of DevTools
 # elif [ "$BOT" = "integration_ddc" ]; then
 
-elif [ "$BOT" = "integration_dart2js" ]; then
+# TODO(https://github.com/flutter/devtools/issues/1987): rewrite legacy integration tests.
+elif [ "$BOT" = "dart2js" ]; then
 
     flutter pub get
 
@@ -149,9 +172,19 @@ https://github.com/flutter/flutter/issues/118470). Run the test locally to see i
 images under a 'failures/' directory are created as a result of the test run:\n\
 $ dart run integration_test/run_tests.dart --headless"
 
-    # TODO(https://github.com/flutter/devtools/issues/1987): rewrite integration tests.
-    dart run integration_test/run_tests.dart --headless
+    if [ "$DEVICE" = "flutter" ]; then
 
+        dart run integration_test/run_tests.dart --headless
+
+    elif [ "$DEVICE" = "flutter-web" ]; then
+
+        dart run integration_test/run_tests.dart --test-app-device=chrome --headless
+
+    elif [ "$DEVICE" = "dart-cli" ]; then
+
+        dart run integration_test/run_tests.dart --test-app-device=cli --headless
+
+    fi
 fi
 
 popd

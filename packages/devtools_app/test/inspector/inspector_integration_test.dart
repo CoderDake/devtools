@@ -16,7 +16,7 @@ import '../test_infra/matchers/matchers.dart';
 // reduced to under 1 second without introducing flakes.
 const inspectorChangeSettleTime = Duration(seconds: 2);
 
-void main() async {
+void main() {
   // We need to use real async in this test so we need to use this binding.
   initializeLiveTestWidgetsFlutterBindingWithAssets();
   const windowSize = Size(2600.0, 1200.0);
@@ -24,11 +24,9 @@ void main() async {
   final FlutterTestEnvironment env = FlutterTestEnvironment(
     const FlutterRunConfiguration(withDebugger: true),
   );
-  await env.setupEnvironment();
-  await storage.setValue('ui.denseMode', 'true');
 
   env.afterEverySetup = () async {
-    final service = serviceManager.inspectorService;
+    final service = serviceConnection.inspectorService;
     if (env.reuseTestEnvironment) {
       // Ensure the previous test did not set the selection on the device.
       // TODO(jacobr): add a proper method to WidgetInspectorService that does
@@ -45,23 +43,24 @@ void main() async {
     }
   };
 
-  setGlobal(DevToolsExtensionPoints, ExternalDevToolsExtensionPoints());
-  setGlobal(BreakpointManager, BreakpointManager());
-  setGlobal(IdeTheme, IdeTheme());
-  setGlobal(NotificationService, NotificationService());
+  setUp(() async {
+    await env.setupEnvironment();
+    await storage.setValue('ui.denseMode', 'true');
+    preferences.toggleDenseMode(true);
+  });
+
+  tearDownAll(() async {
+    await env.tearDownEnvironment(force: true);
+  });
 
   group('screenshot tests', () {
-    tearDownAll(() async {
-      await env.tearDownEnvironment(force: true);
-    });
-
     testWidgetsWithWindowSize(
       'navigation',
       windowSize,
       (WidgetTester tester) async {
         await env.setupEnvironment();
-        expect(serviceManager.service, equals(env.service));
-        expect(serviceManager.isolateManager, isNotNull);
+        expect(serviceConnection.serviceManager.service, equals(env.service));
+        expect(serviceConnection.serviceManager.isolateManager, isNotNull);
 
         final screen = InspectorScreen();
         await tester.pumpWidget(
@@ -355,13 +354,13 @@ void main() async {
 
       /// After the hot restart some existing calls to the vm service may
       /// timeout and that is ok.
-      serviceManager.service.doNotWaitForPendingFuturesBeforeExit();
+      serviceManager.manager.service.doNotWaitForPendingFuturesBeforeExit();
 
       await serviceManager.performHotRestart();
       // The isolate starts out paused on a hot restart so we have to resume
       // it manually to make the test pass.
 
-      await serviceManager.service
+      await serviceManager.manager.service
           .resume(serviceManager.isolateManager.selectedIsolate.id);
 
       // First UI transition is to an empty tree.
@@ -405,10 +404,6 @@ void main() async {
   });
 
   group('widget errors', () {
-    tearDownAll(() async {
-      await env.tearDownEnvironment(force: true);
-    });
-
     testWidgetsWithWindowSize(
       'show navigator and error labels',
       windowSize,
@@ -419,8 +414,8 @@ void main() async {
             entryScript: 'lib/overflow_errors.dart',
           ),
         );
-        expect(serviceManager.service, equals(env.service));
-        expect(serviceManager.isolateManager, isNotNull);
+        expect(serviceConnection.serviceManager.service, equals(env.service));
+        expect(serviceConnection.serviceManager.isolateManager, isNotNull);
 
         final screen = InspectorScreen();
         await tester.pumpWidget(

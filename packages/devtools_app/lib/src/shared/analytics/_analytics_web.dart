@@ -11,12 +11,13 @@ import 'dart:async';
 // ignore: avoid_web_libraries_in_flutter, by design
 import 'dart:html';
 
+import 'package:devtools_app_shared/ui.dart';
+import 'package:devtools_app_shared/utils.dart';
 import 'package:js/js.dart';
 import 'package:logging/logging.dart';
 
 import '../../../devtools.dart' as devtools show version;
 import '../config_specific/server/server.dart' as server;
-import '../config_specific/url/url.dart';
 import '../globals.dart';
 import '../primitives/url_utils.dart';
 import '../ui/gtags.dart';
@@ -95,6 +96,7 @@ class GtagEventDevTools extends GtagEvent {
     int? heap_diff_objects_before, // metric7
     int? heap_diff_objects_after, // metric8
     int? heap_objects_total, // metric9
+    // Inspector screen metrics. See [InspectorScreenMetrics].
     int? root_set_count, // metric10
     int? row_count, // metric11
     int? inspector_tree_controller_id, // metric12
@@ -159,6 +161,12 @@ class GtagEventDevTools extends GtagEvent {
   external int? get heap_diff_objects_after;
 
   external int? get heap_objects_total;
+
+  external int? get root_set_count;
+
+  external int? get row_count;
+
+  external int? get inspector_tree_controller_id;
 }
 
 // This cannot be a factory constructor in the [GtagEventDevTools] class due to
@@ -283,6 +291,15 @@ GtagExceptionDevTools _gtagException(
     heap_objects_total: screenMetrics is MemoryScreenMetrics
         ? screenMetrics.heapObjectsTotal
         : null,
+    // [InspectorScreenMetrics]
+    root_set_count: screenMetrics is InspectorScreenMetrics
+        ? screenMetrics.rootSetCount
+        : null,
+    row_count:
+        screenMetrics is InspectorScreenMetrics ? screenMetrics.rowCount : null,
+    inspector_tree_controller_id: screenMetrics is InspectorScreenMetrics
+        ? screenMetrics.inspectorTreeControllerId
+        : null,
   );
 }
 
@@ -321,6 +338,10 @@ class GtagExceptionDevTools extends GtagException {
     int? heap_diff_objects_before, // metric7
     int? heap_diff_objects_after, // metric8
     int? heap_objects_total, // metric9
+    // Inspector screen metrics. See [InspectorScreenMetrics].
+    int? root_set_count, // metric10
+    int? row_count, // metric11
+    int? inspector_tree_controller_id, // metric12
   });
 
   @override
@@ -369,6 +390,12 @@ class GtagExceptionDevTools extends GtagException {
   external int? get heap_diff_objects_after;
 
   external int? get heap_objects_total;
+
+  external int? get root_set_count;
+
+  external int? get row_count;
+
+  external int? get inspector_tree_controller_id;
 }
 
 /// Request DevTools property value 'enabled' (GA enabled) stored in the file
@@ -666,14 +693,15 @@ bool _userApplicationDimensionsComputed = false;
 void _computeUserApplicationCustomGTagData() {
   if (_userApplicationDimensionsComputed) return;
 
-  final connectedApp = serviceManager.connectedApp!;
+  final connectedApp = serviceConnection.serviceManager.connectedApp!;
   assert(connectedApp.isFlutterAppNow != null);
   assert(connectedApp.isDartWebAppNow != null);
   assert(connectedApp.isProfileBuildNow != null);
 
   const unknownOS = 'unknown';
   if (connectedApp.isFlutterAppNow!) {
-    userPlatformType = serviceManager.vm?.operatingSystem ?? unknownOS;
+    userPlatformType =
+        serviceConnection.serviceManager.vm?.operatingSystem ?? unknownOS;
   }
   if (connectedApp.isFlutterWebAppNow) {
     userAppType = appTypeFlutterWeb;
@@ -774,7 +802,7 @@ Future<void> setupDimensions() async {
 }
 
 void setupUserApplicationDimensions() {
-  if (serviceManager.connectedApp != null &&
+  if (serviceConnection.serviceManager.connectedApp != null &&
       !_userApplicationDimensionsComputed &&
       !_computingUserApplicationDimensions) {
     _computingUserApplicationDimensions = true;

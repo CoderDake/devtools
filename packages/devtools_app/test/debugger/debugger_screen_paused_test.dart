@@ -7,6 +7,8 @@ import 'package:devtools_app/src/screens/debugger/codeview.dart';
 import 'package:devtools_app/src/screens/debugger/controls.dart';
 import 'package:devtools_app/src/screens/debugger/debugger_model.dart';
 import 'package:devtools_app/src/shared/diagnostics/primitives/source_location.dart';
+import 'package:devtools_app_shared/ui.dart';
+import 'package:devtools_app_shared/utils.dart';
 import 'package:devtools_test/devtools_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,23 +22,26 @@ void main() {
 
   const windowSize = Size(2500.0, 1500.0);
 
-  final fakeServiceManager = FakeServiceManager();
+  final fakeServiceConnection = FakeServiceConnectionManager();
   final scriptManager = MockScriptManager();
   mockConnectedApp(
-    fakeServiceManager.connectedApp!,
+    fakeServiceConnection.serviceManager.connectedApp!,
     isFlutterApp: true,
     isProfileBuild: false,
     isWebApp: false,
   );
-  setGlobal(ServiceConnectionManager, fakeServiceManager);
+  setGlobal(ServiceConnectionManager, fakeServiceConnection);
   setGlobal(IdeTheme, IdeTheme());
   setGlobal(ScriptManager, scriptManager);
   setGlobal(NotificationService, NotificationService());
   setGlobal(BreakpointManager, BreakpointManager());
-  setGlobal(DevToolsExtensionPoints, ExternalDevToolsExtensionPoints());
+  setGlobal(
+    DevToolsEnvironmentParameters,
+    ExternalDevToolsEnvironmentParameters(),
+  );
   setGlobal(PreferencesController, PreferencesController());
-  fakeServiceManager.consoleService.ensureServiceInitialized();
-  when(fakeServiceManager.errorBadgeManager.errorCountNotifier('debugger'))
+  fakeServiceConnection.consoleService.ensureServiceInitialized();
+  when(fakeServiceConnection.errorBadgeManager.errorCountNotifier('debugger'))
       .thenReturn(ValueNotifier<int>(0));
   final debuggerController = createMockDebuggerControllerWithDefaults();
   final codeViewController = debuggerController.codeViewController;
@@ -53,6 +58,7 @@ void main() {
       .thenReturn(ValueNotifier(mockScriptRef));
   when(codeViewController.currentParsedScript)
       .thenReturn(ValueNotifier(mockParsedScript));
+  when(codeViewController.navigationInProgress).thenReturn(false);
 
   Finder findDebuggerButtonWithTitle(String title) => find.byWidgetPredicate(
         (Widget widget) => widget is DebuggerButton && widget.title == title,
@@ -83,7 +89,7 @@ void main() {
           debugger: debuggerController,
         ),
       );
-      (serviceManager.isolateManager as FakeIsolateManager)
+      (serviceConnection.serviceManager.isolateManager as FakeIsolateManager)
           .setMainIsolatePausedState(true);
       await tester.pump();
 

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:vm_service/vm_service.dart';
 
@@ -13,7 +14,6 @@ import 'globals.dart';
 import 'primitives/trees.dart';
 import 'primitives/utils.dart';
 import 'routing.dart';
-import 'theme.dart';
 
 mixin ProfilableDataMixin<T extends TreeNode<T>> on TreeNode<T> {
   ProfileMetaData get profileMetaData;

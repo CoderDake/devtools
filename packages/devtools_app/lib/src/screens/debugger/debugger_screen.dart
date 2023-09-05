@@ -5,6 +5,8 @@
 import 'dart:async';
 
 import 'package:codicon/codicon.dart';
+import 'package:devtools_app_shared/ui.dart';
+import 'package:devtools_app_shared/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Stack;
 import 'package:flutter/scheduler.dart';
@@ -17,14 +19,10 @@ import '../../shared/common_widgets.dart';
 import '../../shared/diagnostics/primitives/source_location.dart';
 import '../../shared/flex_split_column.dart';
 import '../../shared/globals.dart';
-import '../../shared/primitives/auto_dispose.dart';
 import '../../shared/primitives/listenable.dart';
-import '../../shared/primitives/simple_items.dart';
+import '../../shared/primitives/utils.dart';
 import '../../shared/routing.dart';
 import '../../shared/screen.dart';
-import '../../shared/split.dart';
-import '../../shared/theme.dart';
-import '../../shared/ui/icons.dart';
 import '../../shared/utils.dart';
 import 'breakpoints.dart';
 import 'call_stack.dart';
@@ -44,7 +42,7 @@ class DebuggerScreen extends Screen {
           id: id,
           requiresDebugBuild: true,
           title: ScreenMetaData.debugger.title,
-          icon: Octicons.bug,
+          icon: ScreenMetaData.debugger.icon,
           showFloatingDebuggerControls: false,
         );
 
@@ -117,7 +115,8 @@ class DebuggerScreenBodyState extends State<DebuggerScreenBody>
     ga.timeStart(DebuggerScreen.id, gac.pageReady);
     _shownFirstScript = false;
     SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-      if (!_shownFirstScript) return;
+      if (!_shownFirstScript ||
+          controller.codeViewController.navigationInProgress) return;
       final routerDelegate = DevToolsRouterDelegate.of(context);
       routerDelegate.updateStateIfChanged(
         CodeViewSourceLocationNavigationState(
@@ -177,10 +176,14 @@ class DebuggerScreenBodyState extends State<DebuggerScreenBody>
                     return child!;
                   }
                 },
-                child: DualValueListenableBuilder<ScriptRef?, ParsedScript?>(
-                  firstListenable: codeViewController.currentScriptRef,
-                  secondListenable: codeViewController.currentParsedScript,
-                  builder: (context, scriptRef, parsedScript, _) {
+                child: MultiValueListenableBuilder(
+                  listenables: [
+                    codeViewController.currentScriptRef,
+                    codeViewController.currentParsedScript,
+                  ],
+                  builder: (context, values, _) {
+                    final scriptRef = values.first as ScriptRef?;
+                    final parsedScript = values.second as ParsedScript?;
                     if (scriptRef != null &&
                         parsedScript != null &&
                         !_shownFirstScript) {
@@ -189,7 +192,7 @@ class DebuggerScreenBodyState extends State<DebuggerScreenBody>
                         gac.pageReady,
                       );
                       unawaited(
-                        serviceManager.sendDwdsEvent(
+                        serviceConnection.sendDwdsEvent(
                           screen: DebuggerScreen.id,
                           action: gac.pageReady,
                         ),
@@ -387,7 +390,7 @@ class DebuggerStatus extends StatefulWidget {
 class _DebuggerStatusState extends State<DebuggerStatus> with AutoDisposeMixin {
   String _status = '';
 
-  bool get _isPaused => serviceManager.isMainIsolatePaused;
+  bool get _isPaused => serviceConnection.serviceManager.isMainIsolatePaused;
 
   @override
   void initState() {
@@ -409,7 +412,8 @@ class _DebuggerStatusState extends State<DebuggerStatus> with AutoDisposeMixin {
 
   void _updateStatusOnPause() {
     addAutoDisposeListener(
-      serviceManager.isolateManager.mainIsolateState?.isPaused,
+      serviceConnection
+          .serviceManager.isolateManager.mainIsolateState?.isPaused,
       () => unawaited(
         _updateStatus(),
       ),
@@ -487,7 +491,7 @@ class _FloatingDebuggerControlsState extends State<FloatingDebuggerControls>
         ProvidedControllerMixin<DebuggerController, FloatingDebuggerControls> {
   late double controlHeight;
 
-  bool get _isPaused => serviceManager.isMainIsolatePaused;
+  bool get _isPaused => serviceConnection.serviceManager.isMainIsolatePaused;
 
   @override
   void didChangeDependencies() {
@@ -497,7 +501,8 @@ class _FloatingDebuggerControlsState extends State<FloatingDebuggerControls>
 
     controlHeight = _isPaused ? defaultButtonHeight : 0.0;
     addAutoDisposeListener(
-      serviceManager.isolateManager.mainIsolateState?.isPaused,
+      serviceConnection
+          .serviceManager.isolateManager.mainIsolateState?.isPaused,
       () {
         setState(() {
           if (_isPaused) {

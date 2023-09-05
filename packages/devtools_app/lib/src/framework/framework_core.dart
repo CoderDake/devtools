@@ -4,13 +4,16 @@
 
 import 'dart:async';
 
+import 'package:devtools_app_shared/utils.dart';
+import 'package:devtools_shared/service.dart';
 import 'package:logging/logging.dart';
 
 import '../../devtools.dart' as devtools show version;
+import '../extensions/extension_service.dart';
 import '../screens/debugger/breakpoint_manager.dart';
-import '../service/service.dart';
 import '../service/service_manager.dart';
 import '../service/vm_service_wrapper.dart';
+import '../shared/banner_messages.dart';
 import '../shared/console/eval/eval_service.dart';
 import '../shared/framework_controller.dart';
 import '../shared/globals.dart';
@@ -36,8 +39,10 @@ class FrameworkCore {
     setGlobal(OfflineModeController, OfflineModeController());
     setGlobal(ScriptManager, ScriptManager());
     setGlobal(NotificationService, NotificationService());
+    setGlobal(BannerMessagesController, BannerMessagesController());
     setGlobal(BreakpointManager, BreakpointManager());
     setGlobal(EvalService, EvalService());
+    setGlobal(ExtensionService, ExtensionService());
   }
 
   static void init() {
@@ -52,7 +57,7 @@ class FrameworkCore {
     required ErrorReporter errorReporter,
     bool logException = true,
   }) async {
-    if (serviceManager.hasConnection) {
+    if (serviceConnection.serviceManager.hasConnection) {
       // TODO(https://github.com/flutter/devtools/issues/1568): why do we call
       // this multiple times?
       return true;
@@ -63,9 +68,24 @@ class FrameworkCore {
       final finishedCompleter = Completer<void>();
 
       try {
-        final VmServiceWrapper service = await connect(uri, finishedCompleter);
+        final VmServiceWrapper service = await connect<VmServiceWrapper>(
+          uri: uri,
+          finishedCompleter: finishedCompleter,
+          createService: ({
+            // ignore: avoid-dynamic, code needs to match API from VmService.
+            required Stream<dynamic> /*String|List<int>*/ inStream,
+            required void Function(String message) writeMessage,
+            required Uri connectedUri,
+          }) =>
+              VmServiceWrapper.fromNewVmService(
+            inStream: inStream,
+            writeMessage: writeMessage,
+            connectedUri: connectedUri,
+            trackFutures: integrationTestMode,
+          ),
+        );
 
-        await serviceManager.vmServiceOpened(
+        await serviceConnection.serviceManager.vmServiceOpened(
           service,
           onClosed: finishedCompleter.future,
         );

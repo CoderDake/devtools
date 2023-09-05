@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 import 'package:devtools_app/devtools_app.dart';
+import 'package:devtools_app_shared/ui.dart';
+import 'package:devtools_app_shared/utils.dart';
 import 'package:devtools_test/devtools_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,23 +13,26 @@ import 'package:vm_service/vm_service.dart';
 
 void main() {
   const windowSize = Size(4000.0, 4000.0);
-  final fakeServiceManager = FakeServiceManager();
+  final fakeServiceConnection = FakeServiceConnectionManager();
   final scriptManager = MockScriptManager();
   mockConnectedApp(
-    fakeServiceManager.connectedApp!,
+    fakeServiceConnection.serviceManager.connectedApp!,
     isProfileBuild: false,
     isFlutterApp: true,
     isWebApp: false,
   );
-  setGlobal(ServiceConnectionManager, fakeServiceManager);
+  setGlobal(ServiceConnectionManager, fakeServiceConnection);
   setGlobal(IdeTheme, IdeTheme());
   setGlobal(ScriptManager, scriptManager);
   setGlobal(NotificationService, NotificationService());
   setGlobal(BreakpointManager, BreakpointManager());
-  setGlobal(DevToolsExtensionPoints, ExternalDevToolsExtensionPoints());
+  setGlobal(
+    DevToolsEnvironmentParameters,
+    ExternalDevToolsEnvironmentParameters(),
+  );
   setGlobal(PreferencesController, PreferencesController());
-  fakeServiceManager.consoleService.ensureServiceInitialized();
-  when(fakeServiceManager.errorBadgeManager.errorCountNotifier('debugger'))
+  fakeServiceConnection.consoleService.ensureServiceInitialized();
+  when(fakeServiceConnection.errorBadgeManager.errorCountNotifier('debugger'))
       .thenReturn(ValueNotifier<int>(0));
   final debuggerController = createMockDebuggerControllerWithDefaults();
   final codeViewController = debuggerController.codeViewController;

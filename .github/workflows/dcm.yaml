@@ -15,10 +15,9 @@ name: Dart Code Metrics
 
 on:
   pull_request_target:
-    # synchronize, opened, and reopened are the default pull_request_target
-    # types. labeled and unlabeled are also required to re-run workflow when
-    # the run-dcm-workflow label is added or removed.
-    types: [opened, reopened, labeled, unlabeled]
+    # labeled and unlabeled are required along with open to re-run
+    # workflow when the run-dcm-workflow label is added or removed.
+    types: [opened, labeled, unlabeled]
     branches:
       - master
     paths:
@@ -40,9 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone Flutter DevTools
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
         with:
-          ref: "${{ github.event.pull_request.sha }}"
+          ref: "${{ github.event.pull_request.head.sha }}"
       - name: Load Cached Flutter SDK
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:

@@ -8,6 +8,8 @@
 
 import 'dart:async';
 
+import 'package:devtools_app_shared/service.dart';
+import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -46,10 +48,6 @@ void debugLogger(String message) {
       return true;
     }(),
   );
-}
-
-double scaleByFontFactor(double original) {
-  return (original * ideTheme.fontSizeFactor).roundToDouble();
 }
 
 bool isDense() {
@@ -94,17 +92,29 @@ List<ConnectionDescription> generateDeviceDescription(
   final flutterVersion = connectedApp.flutterVersionNow;
 
   ConnectionDescription? vmServiceConnection;
-  if (includeVmServiceConnection && serviceManager.service != null) {
-    final description = serviceManager.service!.connectedUri.toString();
+  if (includeVmServiceConnection &&
+      serviceConnection.serviceManager.service != null) {
+    final description =
+        serviceConnection.serviceManager.service!.connectedUri.toString();
     vmServiceConnection = ConnectionDescription(
       title: 'VM Service Connection',
       description: description,
-      actions: [CopyToClipboardControl(dataProvider: () => description)],
+      actions: [
+        CopyToClipboardControl(
+          dataProvider: () => description,
+          size: defaultIconSize,
+        ),
+      ],
     );
   }
 
   return [
     ConnectionDescription(title: 'CPU / OS', description: vm.deviceDisplay),
+    ConnectionDescription(
+      title: 'Connected app type',
+      description: connectedApp.display,
+    ),
+    if (vmServiceConnection != null) vmServiceConnection,
     ConnectionDescription(title: 'Dart Version', description: version),
     if (flutterVersion != null) ...{
       ConnectionDescription(
@@ -117,11 +127,6 @@ List<ConnectionDescription> generateDeviceDescription(
             '${flutterVersion.engineRevision}',
       ),
     },
-    ConnectionDescription(
-      title: 'Connected app type',
-      description: connectedApp.display,
-    ),
-    if (vmServiceConnection != null) vmServiceConnection,
   ];
 }
 
@@ -132,8 +137,8 @@ List<String> issueLinkDetails() {
     '___', // This will create a separator in the rendered markdown.
     '**DevTools version**: ${devtools.version}',
   ];
-  final vm = serviceManager.vm;
-  final connectedApp = serviceManager.connectedApp;
+  final vm = serviceConnection.serviceManager.vm;
+  final connectedApp = serviceConnection.serviceManager.connectedApp;
   if (vm != null && connectedApp != null) {
     final descriptionEntries = generateDeviceDescription(
       vm,
