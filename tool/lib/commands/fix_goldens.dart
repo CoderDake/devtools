@@ -2,11 +2,12 @@
 // RUN_ID=$1
 import 'dart:async';
 import 'dart:io';
-import '../utils.dart';
 
 import 'package:args/command_runner.dart';
 import 'package:io/io.dart';
 import 'package:path/path.dart' as path;
+
+import '../utils.dart';
 
 class FixGoldensCommand extends Command {
   FixGoldensCommand() {
@@ -33,14 +34,12 @@ class FixGoldensCommand extends Command {
     Directory.current = pathFromRepoRoot("");
 
     final runId = argResults!['run-id']!;
-// DOWNLOAD_DIR=$(mktemp -d)
     final tmpDownloadDir = Directory(
       path.join('.tmp${DateTime.now().millisecondsSinceEpoch}'),
     );
     tmpDownloadDir.createSync();
     try {
-// echo "Downloading the artifacts to $DOWNLOAD_DIR"
-// gh run download $RUN_ID -p "*golden_image_failures*" -D "$DOWNLOAD_DIR"
+      print('Downloading the artifacts to ${tmpDownloadDir.path}');
       await processManager.runProcess(
         CliCommand.from('gh', [
           'run',
@@ -53,39 +52,31 @@ class FixGoldensCommand extends Command {
         ]),
       );
 
-// NEW_GOLDENS=$(find $DOWNLOAD_DIR -type f | grep "testImage.png" )
-      final newGoldens = tmpDownloadDir
+      final downloadedGoldens = tmpDownloadDir
           .listSync(recursive: true)
           .where((e) => e.path.endsWith('testImage.png'));
-      print(newGoldens);
-// cd packages/devtools_app/test/
-      final allDevtoolsPngFiles =
+      final allLocalGoldenPngs =
           Directory(pathFromRepoRoot("packages/devtools_app/test/"))
               .listSync(recursive: true)
             ..where((e) => e.path.endsWith('.png'));
 
-      for (final file in newGoldens) {
-// while IFS= read -r GOLDEN ; do
-//   FILE_NAME=$(basename $GOLDEN | sed "s|_testImage.png$|.png|")
-        final baseName = path.basename(file.path);
-        final pngRoot =
-            '${RegExp(r'(^.*)_testImage.png').firstMatch(baseName)?.group(1)}.png';
+      for (final downloadedGolden in downloadedGoldens) {
+        final downloadedGoldenBaseName = path.basename(downloadedGolden.path);
+        final expectedGoldenFileName =
+            '${RegExp(r'(^.*)_testImage.png').firstMatch(downloadedGoldenBaseName)?.group(1)}.png';
 
-        final fileMatches = allDevtoolsPngFiles.where(
-          (e) => e.path.endsWith(pngRoot),
+        final fileMatches = allLocalGoldenPngs.where(
+          (e) => e.path.endsWith(expectedGoldenFileName),
         );
-//   FOUND_FILES=$(find . -name "$FILE_NAME" )
-//   FOUND_FILE_COUNT=$(echo -n "$FOUND_FILES" | grep -c '^')
 
-//   if [[ $FOUND_FILE_COUNT -ne 1 ]] ; then
         final String destinationPath;
         if (fileMatches.isEmpty) {
-          throw 'Could not find a golden Image for $baseName using $pngRoot as '
-              'the item of the search.';
+          throw 'Could not find a golden Image for $downloadedGoldenBaseName using $expectedGoldenFileName as '
+              'the name of the search.';
         } else if (fileMatches.length == 1) {
           destinationPath = fileMatches.first.path;
         } else {
-          print("Multiple goldens found for ${file.path}");
+          print("Multiple goldens found for ${downloadedGolden.path}");
           print("Select which golden should be overridden:");
 
           for (int i = 0; i < fileMatches.length; i++) {
@@ -97,30 +88,12 @@ class FixGoldensCommand extends Command {
 
           destinationPath = fileMatches.elementAt(userSelection - 1).path;
         }
-        await file.rename(destinationPath);
+        await downloadedGolden.rename(destinationPath);
 
         print("Fixed: $destinationPath");
-//     # If there are goldens with conflicting names, we need to pick which one
-//     # maps to the artifact.
-//     echo "Multiple goldens found for $(echo $GOLDEN| sed 's|^.*golden_image_failures[^/]*/||')"
-//     echo "Select which golden should be overridden:"
-
-//     select SELECTED_FILE in $FOUND_FILES
-//     do
-//       DEST_PATH="$SELECTED_FILE"
-//       break;
-//     done </dev/tty
-//   else
-//     DEST_PATH=$FOUND_FILES
-//   fi
-
-//   echo "FIXED: $DEST_PATH"
-//   mv "$GOLDEN" "$DEST_PATH"
-// done <<< "$NEW_GOLDENS"
       }
 
-// echo "Done updating $(echo -n "$NEW_GOLDENS" | grep -c '^') goldens"
-      print('Done updating ${newGoldens.length} goldens');
+      print('Done updating ${downloadedGoldens.length} goldens');
     } finally {
       tmpDownloadDir.deleteSync(recursive: true);
     }
