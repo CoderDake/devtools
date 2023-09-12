@@ -64,8 +64,6 @@ class FixGoldensCommand extends Command {
               .listSync(recursive: true)
             ..where((e) => e.path.endsWith('.png'));
 
-      print('NewGoldens L: ${newGoldens.length}');
-
       for (final file in newGoldens) {
 // while IFS= read -r GOLDEN ; do
 //   FILE_NAME=$(basename $GOLDEN | sed "s|_testImage.png$|.png|")
@@ -73,11 +71,9 @@ class FixGoldensCommand extends Command {
         final pngRoot =
             '${RegExp(r'(^.*)_testImage.png').firstMatch(baseName)?.group(1)}.png';
 
-        print('basename: $baseName root: $pngRoot');
         final fileMatches = allDevtoolsPngFiles.where(
           (e) => e.path.endsWith(pngRoot),
         );
-        print('MATCHES: $fileMatches');
 //   FOUND_FILES=$(find . -name "$FILE_NAME" )
 //   FOUND_FILE_COUNT=$(echo -n "$FOUND_FILES" | grep -c '^')
 
