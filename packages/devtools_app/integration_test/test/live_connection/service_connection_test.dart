@@ -52,7 +52,7 @@ void main() {
       // Use a range instead of an exact number because service extension
       // calls are not consistent. This will still catch any spurious calls
       // that are unintentionally added at start up.
-      const Range(40, 60).contains(vmServiceCallCount),
+      const Range(40, 70).contains(vmServiceCallCount),
       isTrue,
       reason: 'Unexpected number of vm service calls upon connection: '
           '$vmServiceCallCount. If this is expected, please update this test '
@@ -67,14 +67,18 @@ void main() {
           // Filter out unawaited streamListen calls.
           .where((call) => call != 'streamListen')
           .toList()
-          .sublist(0, 5),
+          .sublist(0, 6),
       equals([
         'getSupportedProtocols',
         'getVersion',
         'getFlagList',
+        'getDartDevelopmentServiceVersion',
+        'getDartDevelopmentServiceVersion',
         'getVM',
-        'getIsolate',
       ]),
+      reason: 'Unexpected order of vm service calls upon connection. '
+          'Here are the calls for this test run:\n '
+          '${serviceConnection.serviceManager.service!.vmServiceCalls.toString()}',
     );
 
     expect(
@@ -111,7 +115,11 @@ void main() {
 
     // TODO(kenz): re-work this integration test so that we do not have to be
     // on the inspector screen for this to pass.
-    await switchToScreen(tester, ScreenMetaData.inspector);
+    await switchToScreen(
+      tester,
+      tabIcon: ScreenMetaData.inspector.icon!,
+      screenId: ScreenMetaData.inspector.id,
+    );
     await tester.pump(longDuration);
 
     // Ensure all futures are completed before running checks.

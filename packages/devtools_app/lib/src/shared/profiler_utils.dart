@@ -3,9 +3,10 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+
+import 'package:dds_service_extensions/dds_service_extensions.dart';
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
-import 'package:vm_service/vm_service.dart';
 
 import '../screens/debugger/codeview_controller.dart';
 import '../screens/debugger/debugger_screen.dart';
@@ -254,7 +255,6 @@ class MethodAndSourceDisplay extends StatelessWidget {
     required this.methodName,
     required this.packageUri,
     required this.sourceLine,
-    required this.isSelected,
     this.displayInRow = true,
     super.key,
   });
@@ -266,8 +266,6 @@ class MethodAndSourceDisplay extends StatelessWidget {
   final String packageUri;
 
   final int? sourceLine;
-
-  final bool isSelected;
 
   final bool displayInRow;
 
@@ -334,15 +332,16 @@ class MethodAndSourceDisplay extends StatelessWidget {
 }
 
 Future<void> _toolEventNavigate(String packageUri, int line, int column) async {
-  final isolateId = serviceConnection.serviceManager.isolateManager.selectedIsolate.value!.id!;
+  final isolateId = serviceConnection
+      .serviceManager.isolateManager.selectedIsolate.value!.id!;
   await serviceConnection.resolvedUriManager
       .fetchPackageUris(isolateId, [packageUri]);
   String? fileUri;
   if (packageUri.startsWith('dart:')) {
     fileUri = packageUri;
   } else {
-    fileUri =
-        serviceConnection.resolvedUriManager.lookupFileUri(isolateId, packageUri);
+    fileUri = serviceConnection.resolvedUriManager
+        .lookupFileUri(isolateId, packageUri);
   }
 
   // TODO: add a warning log here

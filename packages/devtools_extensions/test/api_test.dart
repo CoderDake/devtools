@@ -82,6 +82,11 @@ void main() {
       );
 
       expect(
+        DevToolsExtensionEventType.from('forceReload'),
+        DevToolsExtensionEventType.forceReload,
+      );
+
+      expect(
         DevToolsExtensionEventType.from('showNotification'),
         DevToolsExtensionEventType.showNotification,
       );
@@ -95,6 +100,11 @@ void main() {
         DevToolsExtensionEventType.from('vmServiceConnection'),
         DevToolsExtensionEventType.vmServiceConnection,
       );
+
+      expect(
+        DevToolsExtensionEventType.from('themeUpdate'),
+        DevToolsExtensionEventType.themeUpdate,
+      );
     });
 
     test('parses for unexpected values', () {
@@ -105,6 +115,41 @@ void main() {
       expect(
         DevToolsExtensionEventType.from('pongg'),
         DevToolsExtensionEventType.unknown,
+      );
+    });
+
+    test('supportedForDirection', () {
+      verifyEventDirection(
+        DevToolsExtensionEventType.ping,
+        (bidirectional: false, toDevTools: false, toExtension: true),
+      );
+      verifyEventDirection(
+        DevToolsExtensionEventType.pong,
+        (bidirectional: false, toDevTools: true, toExtension: false),
+      );
+      verifyEventDirection(
+        DevToolsExtensionEventType.forceReload,
+        (bidirectional: false, toDevTools: false, toExtension: true),
+      );
+      verifyEventDirection(
+        DevToolsExtensionEventType.vmServiceConnection,
+        (bidirectional: true, toDevTools: true, toExtension: true),
+      );
+      verifyEventDirection(
+        DevToolsExtensionEventType.themeUpdate,
+        (bidirectional: false, toDevTools: false, toExtension: true),
+      );
+      verifyEventDirection(
+        DevToolsExtensionEventType.showNotification,
+        (bidirectional: false, toDevTools: true, toExtension: false),
+      );
+      verifyEventDirection(
+        DevToolsExtensionEventType.showBannerMessage,
+        (bidirectional: false, toDevTools: true, toExtension: false),
+      );
+      verifyEventDirection(
+        DevToolsExtensionEventType.unknown,
+        (bidirectional: true, toDevTools: true, toExtension: true),
       );
     });
   });
@@ -180,29 +225,47 @@ void main() {
 
   group('$ShowBannerMessageExtensionEvent', () {
     test('constructs for expected values', () {
-      final event = DevToolsExtensionEvent.parse({
+      var event = DevToolsExtensionEvent.parse({
         'type': 'showBannerMessage',
         'data': {
           'id': 'fooMessageId',
           'message': 'foo message',
           'bannerMessageType': 'warning',
-          'extensionName': 'foo_package',
+          'extensionName': 'foo',
         },
       });
-      final showBannerMessageEvent =
-          ShowBannerMessageExtensionEvent.from(event);
+      var showBannerMessageEvent = ShowBannerMessageExtensionEvent.from(event);
 
       expect(showBannerMessageEvent.messageId, 'fooMessageId');
       expect(showBannerMessageEvent.message, 'foo message');
       expect(showBannerMessageEvent.bannerMessageType, 'warning');
-      expect(showBannerMessageEvent.extensionName, 'foo_package');
+      expect(showBannerMessageEvent.extensionName, 'foo');
+      expect(showBannerMessageEvent.ignoreIfAlreadyDismissed, true);
+
+      event = DevToolsExtensionEvent.parse({
+        'type': 'showBannerMessage',
+        'data': {
+          'id': 'blah',
+          'message': 'blah message',
+          'bannerMessageType': 'error',
+          'extensionName': 'blah',
+          'ignoreIfAlreadyDismissed': false,
+        },
+      });
+      showBannerMessageEvent = ShowBannerMessageExtensionEvent.from(event);
+
+      expect(showBannerMessageEvent.messageId, 'blah');
+      expect(showBannerMessageEvent.message, 'blah message');
+      expect(showBannerMessageEvent.bannerMessageType, 'error');
+      expect(showBannerMessageEvent.extensionName, 'blah');
+      expect(showBannerMessageEvent.ignoreIfAlreadyDismissed, false);
     });
-    test('throws for unexpected values', () async {
+    test('throws for unexpected values', () {
       final event1 = DevToolsExtensionEvent.parse({
         'type': 'showBannerMessage',
         'data': {
           // Missing required fields.
-          'extensionName': 'foo_package',
+          'extensionName': 'foo',
         },
       });
       expect(
@@ -219,7 +282,7 @@ void main() {
           'bad_key': 'fooMessageId',
           'messages': 'foo message',
           'bannerMessageTypeee': 'warning',
-          'extension_name': 'foo_package',
+          'extension_name': 'foo',
         },
       });
       expect(
@@ -236,7 +299,7 @@ void main() {
           'id': 1,
           'message': 'foo message',
           'bannerMessageType': 2.0,
-          'extensionName': 'foo_package',
+          'extensionName': 'foo',
         },
       });
       expect(
@@ -253,7 +316,7 @@ void main() {
           'id': 'fooMessageId',
           'message': 'foo message',
           'bannerMessageType': 'warning',
-          'extensionName': 'foo_package',
+          'extensionName': 'foo',
         },
       });
       expect(
@@ -264,4 +327,22 @@ void main() {
       );
     });
   });
+}
+
+void verifyEventDirection(
+  DevToolsExtensionEventType type,
+  ({bool bidirectional, bool toDevTools, bool toExtension}) expected,
+) {
+  expect(
+    type.supportedForDirection(ExtensionEventDirection.bidirectional),
+    expected.bidirectional,
+  );
+  expect(
+    type.supportedForDirection(ExtensionEventDirection.toDevTools),
+    expected.toDevTools,
+  );
+  expect(
+    type.supportedForDirection(ExtensionEventDirection.toExtension),
+    expected.toExtension,
+  );
 }

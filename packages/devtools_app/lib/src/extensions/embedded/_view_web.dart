@@ -12,6 +12,7 @@ import 'package:devtools_extensions/api.dart';
 import 'package:flutter/material.dart';
 
 import '../../shared/banner_messages.dart';
+import '../../shared/common_widgets.dart';
 import '../../shared/globals.dart';
 import '_controller_web.dart';
 import 'controller.dart';
@@ -25,7 +26,8 @@ class EmbeddedExtension extends StatefulWidget {
   State<EmbeddedExtension> createState() => _EmbeddedExtensionState();
 }
 
-class _EmbeddedExtensionState extends State<EmbeddedExtension> {
+class _EmbeddedExtensionState extends State<EmbeddedExtension>
+    with AutoDisposeMixin {
   late final EmbeddedExtensionControllerImpl _embeddedExtensionController;
   late final _ExtensionIFrameController iFrameController;
 
@@ -39,11 +41,25 @@ class _EmbeddedExtensionState extends State<EmbeddedExtension> {
   }
 
   @override
+  void dispose() {
+    iFrameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
-      child: HtmlElementView(
-        viewType: _embeddedExtensionController.viewId,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: extensionService.refreshInProgress,
+        builder: (context, refreshing, _) {
+          if (refreshing) {
+            return const CenteredCircularProgressIndicator();
+          }
+          return HtmlElementView(
+            viewType: _embeddedExtensionController.viewId,
+          );
+        },
       ),
     );
   }
@@ -74,8 +90,17 @@ class _ExtensionIFrameController extends DisposableController
 
   static const _pollUntilReadyTimeout = Duration(seconds: 10);
 
+  /// The listener that is added to DevTools' [html.window] to receive messages
+  /// from the extension.
+  ///
+  /// We need to store this in a variable so that the listener is properly
+  /// removed in [dispose]. Otherwise, we will end up in a state where we are
+  /// leaking listeners when an extension is disabled and re-enabled.
+  html.EventListener? _handleMessageListener;
+
   void init() {
     _iFrameReady = Completer<void>();
+    _extensionHandlerReady = Completer<void>();
 
     unawaited(
       embeddedExtensionController.extensionIFrame.onLoad.first.then((_) {
@@ -83,14 +108,23 @@ class _ExtensionIFrameController extends DisposableController
       }),
     );
 
-    html.window.addEventListener('message', _handleMessage);
+    html.window.addEventListener(
+      'message',
+      _handleMessageListener = _handleMessage,
+    );
 
     autoDisposeStreamSubscription(
       embeddedExtensionController.extensionPostEventStream.stream
           .listen((event) async {
         final ready = await _pingExtensionUntilReady();
         if (ready) {
-          _postMessage(event);
+          switch (event.type) {
+            case DevToolsExtensionEventType.forceReload:
+              forceReload();
+              break;
+            default:
+              _postMessage(event);
+          }
         } else {
           // TODO(kenz): we may want to give the user a way to retry the failed
           // request or show a more permanent error UI where we guide them to
@@ -103,6 +137,14 @@ class _ExtensionIFrameController extends DisposableController
         }
       }),
     );
+
+    addAutoDisposeListener(preferences.darkModeTheme, () {
+      updateTheme(
+        theme: preferences.darkModeTheme.value
+            ? ExtensionEventParameters.themeValueDark
+            : ExtensionEventParameters.themeValueLight,
+      );
+    });
   }
 
   void _postMessage(DevToolsExtensionEvent event) async {
@@ -163,7 +205,8 @@ class _ExtensionIFrameController extends DisposableController
 
   @override
   void dispose() {
-    html.window.removeEventListener('message', _handleMessage);
+    html.window.removeEventListener('message', _handleMessageListener);
+    _handleMessageListener = null;
     _pollForExtensionHandlerReady?.cancel();
     super.dispose();
   }
@@ -174,12 +217,33 @@ class _ExtensionIFrameController extends DisposableController
   }
 
   @override
-  void vmServiceConnectionChanged({required String? uri}) {
+  void updateVmServiceConnection({required String? uri}) {
     _postMessage(
       DevToolsExtensionEvent(
         DevToolsExtensionEventType.vmServiceConnection,
-        data: {'uri': uri},
+        data: {ExtensionEventParameters.vmServiceConnectionUri: uri},
       ),
+    );
+  }
+
+  @override
+  void updateTheme({required String theme}) {
+    assert(
+      theme == ExtensionEventParameters.themeValueLight ||
+          theme == ExtensionEventParameters.themeValueDark,
+    );
+    _postMessage(
+      DevToolsExtensionEvent(
+        DevToolsExtensionEventType.themeUpdate,
+        data: {ExtensionEventParameters.theme: theme},
+      ),
+    );
+  }
+
+  @override
+  void forceReload() {
+    _postMessage(
+      DevToolsExtensionEvent(DevToolsExtensionEventType.forceReload),
     );
   }
 
@@ -188,9 +252,13 @@ class _ExtensionIFrameController extends DisposableController
     DevToolsExtensionEvent event, {
     void Function()? onUnknownEvent,
   }) {
+    // Ignore events that are not supported for the Extension => DevTools
+    // direction.
+    if (!event.type.supportedForDirection(ExtensionEventDirection.toDevTools)) {
+      return;
+    }
+
     switch (event.type) {
-      case DevToolsExtensionEventType.ping:
-      // Ignore. DevTools should not receive/handle ping events.
       case DevToolsExtensionEventType.pong:
         if (!_extensionHandlerReady.isCompleted) {
           _extensionHandlerReady.complete();
@@ -198,7 +266,7 @@ class _ExtensionIFrameController extends DisposableController
         break;
       case DevToolsExtensionEventType.vmServiceConnection:
         final service = serviceConnection.serviceManager.service;
-        vmServiceConnectionChanged(uri: service?.connectedUri.toString());
+        updateVmServiceConnection(uri: service?.wsUri);
         break;
       case DevToolsExtensionEventType.showNotification:
         _handleShowNotification(event);
@@ -233,6 +301,10 @@ class _ExtensionIFrameController extends DisposableController
         ),
       ],
     );
-    bannerMessages.addMessage(bannerMessage);
+    bannerMessages.addMessage(
+      bannerMessage,
+      callInPostFrameCallback: false,
+      ignoreIfAlreadyDismissed: showBannerMessageEvent.ignoreIfAlreadyDismissed,
+    );
   }
 }

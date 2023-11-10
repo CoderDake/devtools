@@ -13,7 +13,6 @@ import 'package:path/path.dart' as path;
 ///
 /// Example usage:
 ///
-/// dart pub global activate devtools_extensions;
 /// dart run devtools_extensions build_and_copy \
 ///  --source=path/to/your_extension_web_app \
 ///  --dest=path/to/your_pub_package/extension/devtools
@@ -21,14 +20,14 @@ class BuildExtensionCommand extends Command {
   BuildExtensionCommand() {
     argParser
       ..addOption(
-        'source',
+        _sourceKey,
         help: 'The source location for the extension flutter web app (can  be '
             'relative or absolute)',
         valueHelp: 'path/to/foo/packages/foo_devtools_extension',
         mandatory: true,
       )
       ..addOption(
-        'dest',
+        _destinationKey,
         help: 'The destination location for the extension build output (can be '
             'relative or absolute)',
         valueHelp: 'path/to/foo/packages/foo/extension/devtools',
@@ -57,7 +56,7 @@ class BuildExtensionCommand extends Command {
     _log('Building the extension Flutter web app...');
     await _runProcess(
       processManager,
-      'flutter',
+      Platform.isWindows ? 'flutter.bat' : 'flutter',
       [
         'build',
         'web',
@@ -70,52 +69,45 @@ class BuildExtensionCommand extends Command {
       workingDirectory: source,
     );
 
-    _log('Setting canvaskit permissions...');
-    await _runProcess(
-      processManager,
-      'chmod',
-      [
-        '0755',
-        // Note: using a wildcard `canvaskit.*` throws.
-        'build/web/canvaskit/canvaskit.js',
-        'build/web/canvaskit/canvaskit.wasm',
-      ],
-      workingDirectory: source,
-    );
+    // TODO(kenz): investigate if we need to perform a windows equivalent of
+    // `chmod` or if we even need to perform `chmod` for linux / mac anymore.
+    if (!Platform.isWindows) {
+      _log('Setting canvaskit permissions...');
+      await _runProcess(
+        processManager,
+        'chmod',
+        [
+          '0755',
+          // Note: using a wildcard `canvaskit.*` throws.
+          'build/web/canvaskit/canvaskit.js',
+          'build/web/canvaskit/canvaskit.wasm',
+        ],
+        workingDirectory: source,
+      );
+    }
 
     _log('Copying built output to the extension destination...');
     await _copyBuildToDestination(source: source, dest: destination);
-
-    // Closes stdin for the entire program.
-    await sharedStdIn.terminate();
   }
 
   Future<void> _copyBuildToDestination({
     required String source,
     required String dest,
   }) async {
-    _log('Copying the extension config.yaml file into a temp directory...');
-    final tmp = Directory.current.createTempSync();
-    final tmpConfigPath = path.join(tmp.path, 'config.yaml');
-    final destinationConfigPath = path.join(dest, 'config.yaml');
-    File(destinationConfigPath)..copySync(tmpConfigPath);
-
     _log('Replacing the existing extension build with the new one...');
     final sourceBuildPath = path.join(source, 'build', 'web');
     final destinationBuildPath = path.join(dest, 'build');
-    Directory(destinationBuildPath)..deleteSync(recursive: true);
+
+    final destinationDirectory = Directory(destinationBuildPath);
+    if (destinationDirectory.existsSync()) {
+      destinationDirectory.deleteSync(recursive: true);
+    }
     Directory(destinationBuildPath)..createSync(recursive: true);
+
     await copyPath(
       sourceBuildPath,
       destinationBuildPath,
     );
-
-    _log(
-      'Copying the extension config.yaml file back to the destination '
-      'directory...',
-    );
-    File(tmpConfigPath)..copySync(destinationConfigPath);
-    tmp.deleteSync(recursive: true);
 
     _log(
       'Successfully copied extension assets from '

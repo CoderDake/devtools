@@ -34,7 +34,6 @@ class FakeServiceConnectionManager extends Fake
       service: service,
       hasConnection: hasConnection,
       connectedAppInitialized: connectedAppInitialized,
-      hasService: hasService,
       availableLibraries: availableLibraries,
       availableServices: availableServices,
       onVmServiceOpened: resolvedUriManager.vmServiceOpened,
@@ -102,11 +101,12 @@ class FakeServiceManager extends Fake
     VmServiceWrapper? service,
     this.hasConnection = true,
     this.connectedAppInitialized = true,
-    this.hasService = true,
     this.availableServices = const [],
     this.availableLibraries = const [],
     this.onVmServiceOpened,
-  }) {
+    Map<String, Response>? serviceExtensionResponses,
+  }) : serviceExtensionResponses =
+            serviceExtensionResponses ?? _defaultServiceExtensionResponses {
     this.service = service ?? createFakeService();
     mockConnectedApp(
       connectedApp!,
@@ -151,6 +151,12 @@ class FakeServiceManager extends Fake
 
   final Function? onVmServiceOpened;
 
+  final Map<String, Response> serviceExtensionResponses;
+
+  static final _defaultServiceExtensionResponses = <String, Response>{
+    isImpellerEnabled: Response.parse({'enabled': false})!,
+  };
+
   @override
   VmServiceWrapper? service;
 
@@ -166,9 +172,6 @@ class FakeServiceManager extends Fake
 
   @override
   bool hasConnection;
-
-  @override
-  bool hasService;
 
   @override
   bool connectedAppInitialized;
@@ -198,6 +201,19 @@ class FakeServiceManager extends Fake
   set isMainIsolatePaused(bool value) {
     final state = isolateManager.mainIsolateState! as MockIsolateState;
     when(state.isPaused).thenReturn(ValueNotifier(value));
+  }
+
+  @override
+  Future<Response> callServiceExtensionOnMainIsolate(
+    String method, {
+    Map<String, dynamic>? args,
+  }) async {
+    if (!serviceExtensionResponses.containsKey(method)) {
+      throw UnimplementedError(
+        'Unimplemented response for service extension: $method',
+      );
+    }
+    return serviceExtensionResponses[method]!;
   }
 
   @override

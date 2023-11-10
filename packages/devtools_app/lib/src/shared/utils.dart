@@ -6,12 +6,10 @@
 // other libraries in this package.
 // Utils, that do not have dependencies, should go to primitives/utils.dart.
 
-import 'dart:async';
-
 import 'package:devtools_app_shared/service.dart';
 import 'package:devtools_app_shared/ui.dart';
+import 'package:devtools_app_shared/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
@@ -23,22 +21,6 @@ import 'connected_app.dart';
 import 'globals.dart';
 
 final _log = Logger('lib/src/shared/utils');
-
-/// Attempts to copy a String of `data` to the clipboard.
-///
-/// Shows a `successMessage` [Notification] on the passed in `context`.
-Future<void> copyToClipboard(
-  String data,
-  String? successMessage,
-) async {
-  await Clipboard.setData(
-    ClipboardData(
-      text: data,
-    ),
-  );
-
-  if (successMessage != null) notificationService.push(successMessage);
-}
 
 /// Logging to debug console only in debug runs.
 void debugLogger(String message) {
@@ -94,8 +76,7 @@ List<ConnectionDescription> generateDeviceDescription(
   ConnectionDescription? vmServiceConnection;
   if (includeVmServiceConnection &&
       serviceConnection.serviceManager.service != null) {
-    final description =
-        serviceConnection.serviceManager.service!.connectedUri.toString();
+    final description = serviceConnection.serviceManager.service!.wsUri!;
     vmServiceConnection = ConnectionDescription(
       title: 'VM Service Connection',
       description: description,
@@ -132,10 +113,12 @@ List<ConnectionDescription> generateDeviceDescription(
 
 /// This method should be public, because it is used by g3 specific code.
 List<String> issueLinkDetails() {
+  final ide = ideFromUrl();
   final issueDescriptionItems = [
     '<-- Please describe your problem here. Be sure to include repro steps. -->',
     '___', // This will create a separator in the rendered markdown.
     '**DevTools version**: ${devtools.version}',
+    if (ide != null) '**IDE**: $ide',
   ];
   final vm = serviceConnection.serviceManager.vm;
   final connectedApp = serviceConnection.serviceManager.connectedApp;
@@ -220,4 +203,13 @@ class ConnectionDescription {
   final String description;
 
   final List<Widget> actions;
+}
+
+String? ideFromUrl() {
+  return lookupFromQueryParams('ide');
+}
+
+String? lookupFromQueryParams(String key) {
+  final queryParameters = loadQueryParams();
+  return queryParameters[key];
 }

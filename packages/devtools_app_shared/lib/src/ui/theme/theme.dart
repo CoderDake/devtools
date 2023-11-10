@@ -12,6 +12,10 @@ import 'ide_theme.dart';
 // TODO(kenz): try to eliminate as many custom colors as possible, and pull
 // colors only from the [lightColorScheme] and the [darkColorScheme].
 
+/// Whether dark theme should be used as the default theme if none has been
+/// explicitly set.
+const useDarkThemeAsDefault = true;
+
 /// Constructs the light or dark theme for the app taking into account
 /// IDE-supplied theming.
 ThemeData themeFor({
@@ -199,9 +203,11 @@ Color alternatingColorForIndex(int index, ColorScheme colorScheme) {
 /// override the default DevTools themes with.
 ///
 /// A value of 0.5 would result in all colours being considered light/dark, and
-/// a value of 0.1 allowing around only the 10% darkest/lightest colours by
+/// a value of 0.12 allowing around only the 12% darkest/lightest colours by
 /// Flutter's luminance calculation.
-const _lightDarkLuminanceThreshold = 0.1;
+/// 12% was chosen becaues VS Code's default light background color is #f3f3f3
+/// which is a little under 11%.
+const _lightDarkLuminanceThreshold = 0.12;
 
 bool isValidDarkColor(Color? color) {
   if (color == null) {
@@ -255,6 +261,7 @@ double get statusLineHeight => scaleByFontFactor(24.0);
 double get inputDecorationElementHeight => scaleByFontFactor(20.0);
 
 // Padding / spacing constants:
+const largeSpacing = 32.0;
 const defaultSpacing = 16.0;
 const intermediateSpacing = 12.0;
 const denseSpacing = 8.0;
@@ -494,8 +501,7 @@ bool isScreenWiderThan(
   double? width,
 ) {
   return width == null ||
-      MediaQuery.of(context).size.width >
-          scaleByFontFactor(width);
+      MediaQuery.of(context).size.width > scaleByFontFactor(width);
 }
 
 ButtonStyle denseAwareOutlinedButtonStyle(

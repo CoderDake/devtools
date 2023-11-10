@@ -5,8 +5,10 @@
 import 'dart:async';
 
 import 'package:devtools_app_shared/utils.dart';
+import 'package:devtools_shared/devtools_shared.dart';
 import 'package:devtools_shared/service.dart';
 import 'package:logging/logging.dart';
+import 'package:vm_service/vm_service.dart';
 
 import '../../devtools.dart' as devtools show version;
 import '../extensions/extension_service.dart';
@@ -50,11 +52,13 @@ class FrameworkCore {
     _log.info('DevTools version ${devtools.version}.');
   }
 
+  static bool initializationInProgress = false;
+
   /// Returns true if we're able to connect to a device and false otherwise.
   static Future<bool> initVmService(
     String url, {
-    Uri? explicitUri,
-    required ErrorReporter errorReporter,
+    required String serviceUriAsString,
+    ErrorReporter? errorReporter = _defaultErrorReporter,
     bool logException = true,
   }) async {
     if (serviceConnection.serviceManager.hasConnection) {
@@ -63,24 +67,33 @@ class FrameworkCore {
       return true;
     }
 
-    final Uri? uri = explicitUri ?? getServiceUriFromQueryString(url);
+    final normalizedUri = normalizeVmServiceUri(serviceUriAsString);
+    final Uri? uri = normalizedUri ?? getServiceUriFromQueryString(url);
     if (uri != null) {
+      initializationInProgress = true;
       final finishedCompleter = Completer<void>();
 
       try {
         final VmServiceWrapper service = await connect<VmServiceWrapper>(
           uri: uri,
           finishedCompleter: finishedCompleter,
-          createService: ({
-            // ignore: avoid-dynamic, code needs to match API from VmService.
+          serviceFactory: ({
+            // ignore: avoid-dynamic, mirrors types of [VmServiceFactory].
             required Stream<dynamic> /*String|List<int>*/ inStream,
             required void Function(String message) writeMessage,
-            required Uri connectedUri,
+            Log? log,
+            DisposeHandler? disposeHandler,
+            Future? streamClosed,
+            String? wsUri,
+            bool trackFutures = false,
           }) =>
-              VmServiceWrapper.fromNewVmService(
+              VmServiceWrapper.defaultFactory(
             inStream: inStream,
             writeMessage: writeMessage,
-            connectedUri: connectedUri,
+            log: log,
+            disposeHandler: disposeHandler,
+            streamClosed: streamClosed,
+            wsUri: wsUri,
             trackFutures: integrationTestMode,
           ),
         );
@@ -95,12 +108,21 @@ class FrameworkCore {
         if (logException) {
           _log.shout(e, e, st);
         }
-        errorReporter('Unable to connect to VM service at $uri: $e', e);
+        errorReporter!('Unable to connect to VM service at $uri: $e', e);
         return false;
+      } finally {
+        initializationInProgress = false;
       }
     } else {
       // Don't report an error here because we do not have a URI to connect to.
       return false;
     }
+  }
+
+  static void _defaultErrorReporter(String title, Object error) {
+    notificationService.pushError(
+      '$title, $error',
+      isReportable: false,
+    );
   }
 }

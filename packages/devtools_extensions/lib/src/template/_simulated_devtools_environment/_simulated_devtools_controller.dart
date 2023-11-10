@@ -4,18 +4,29 @@
 
 part of '_simulated_devtools_environment.dart';
 
-class _SimulatedDevToolsController extends DisposableController
+@visibleForTesting
+class SimulatedDevToolsController extends DisposableController
     with AutoDisposeControllerMixin
     implements DevToolsExtensionHostInterface {
   /// Logs of the post message communication that goes back and forth between
   /// the extension and the simulated DevTools environment.
-  final messageLogs = ListValueNotifier<_MessageLogEntry>([]);
+  final messageLogs = ListValueNotifier<MessageLogEntry>([]);
+
+  /// The listener that is added to simulated DevTools window to receive
+  /// messages from the extension.
+  ///
+  /// We need to store this in a variable so that the listener is properly
+  /// removed in [dispose].
+  html.EventListener? _handleMessageListener;
 
   void init() {
-    html.window.addEventListener('message', _handleMessage);
+    html.window.addEventListener(
+      'message',
+      _handleMessageListener = _handleMessage,
+    );
     addAutoDisposeListener(serviceManager.connectedState, () {
       if (!serviceManager.connectedState.value.connected) {
-        vmServiceConnectionChanged(uri: null);
+        updateVmServiceConnection(uri: null);
         messageLogs.clear();
       }
     });
@@ -27,7 +38,7 @@ class _SimulatedDevToolsController extends DisposableController
       if (extensionEvent != null) {
         // Do not handle messages that come from the
         // [_SimulatedDevToolsController] itself.
-        if (extensionEvent.source == '$_SimulatedDevToolsController') return;
+        if (extensionEvent.source == '$SimulatedDevToolsController') return;
 
         onEventReceived(extensionEvent);
       }
@@ -36,7 +47,8 @@ class _SimulatedDevToolsController extends DisposableController
 
   @override
   void dispose() {
-    html.window.removeEventListener('message', _handleMessage);
+    html.window.removeEventListener('message', _handleMessageListener);
+    _handleMessageListener = null;
     super.dispose();
   }
 
@@ -48,15 +60,35 @@ class _SimulatedDevToolsController extends DisposableController
   }
 
   @override
-  void vmServiceConnectionChanged({required String? uri}) {
+  void updateVmServiceConnection({required String? uri}) {
+    // TODO(https://github.com/flutter/devtools/issues/6416): write uri to the
+    // window location query parameters so that the vm service connection
+    // persists on hot restart.
+
     // TODO(kenz): add some validation and error handling if [uri] is bad input.
     final normalizedUri =
         uri != null ? normalizeVmServiceUri(uri).toString() : null;
     final event = DevToolsExtensionEvent(
       DevToolsExtensionEventType.vmServiceConnection,
-      data: {'uri': normalizedUri},
+      data: {
+        ExtensionEventParameters.vmServiceConnectionUri: normalizedUri,
+      },
     );
     _postMessageToExtension(event);
+  }
+
+  @override
+  void updateTheme({required String theme}) {
+    assert(
+      theme == ExtensionEventParameters.themeValueLight ||
+          theme == ExtensionEventParameters.themeValueDark,
+    );
+    _postMessageToExtension(
+      DevToolsExtensionEvent(
+        DevToolsExtensionEventType.themeUpdate,
+        data: {ExtensionEventParameters.theme: theme},
+      ),
+    );
   }
 
   @override
@@ -65,8 +97,8 @@ class _SimulatedDevToolsController extends DisposableController
     void Function()? onUnknownEvent,
   }) {
     messageLogs.add(
-      _MessageLogEntry(
-        source: _MessageSource.extension,
+      MessageLogEntry(
+        source: MessageSource.extension,
         data: event.toJson(),
       ),
     );
@@ -77,13 +109,13 @@ class _SimulatedDevToolsController extends DisposableController
     html.window.postMessage(
       {
         ...eventJson,
-        DevToolsExtensionEvent.sourceKey: '$_SimulatedDevToolsController',
+        DevToolsExtensionEvent.sourceKey: '$SimulatedDevToolsController',
       },
       html.window.origin!,
     );
     messageLogs.add(
-      _MessageLogEntry(
-        source: _MessageSource.devtools,
+      MessageLogEntry(
+        source: MessageSource.devtools,
         data: eventJson,
       ),
     );
@@ -92,8 +124,8 @@ class _SimulatedDevToolsController extends DisposableController
   Future<void> hotReloadConnectedApp() async {
     await serviceManager.performHotReload();
     messageLogs.add(
-      _MessageLogEntry(
-        source: _MessageSource.info,
+      MessageLogEntry(
+        source: MessageSource.info,
         message: 'Hot reload performed on connected app',
       ),
     );
@@ -102,25 +134,43 @@ class _SimulatedDevToolsController extends DisposableController
   Future<void> hotRestartConnectedApp() async {
     await serviceManager.performHotRestart();
     messageLogs.add(
-      _MessageLogEntry(
-        source: _MessageSource.info,
+      MessageLogEntry(
+        source: MessageSource.info,
         message: 'Hot restart performed on connected app',
       ),
     );
   }
+
+  void toggleTheme() {
+    final darkThemeEnabled = extensionManager.darkThemeEnabled.value;
+    updateTheme(
+      theme: darkThemeEnabled
+          ? ExtensionEventParameters.themeValueLight
+          : ExtensionEventParameters.themeValueDark,
+    );
+  }
+
+  @override
+  void forceReload() {
+    _postMessageToExtension(
+      DevToolsExtensionEvent(DevToolsExtensionEventType.forceReload),
+    );
+  }
 }
 
-class _MessageLogEntry {
-  _MessageLogEntry({required this.source, this.data, this.message})
+@visibleForTesting
+class MessageLogEntry {
+  MessageLogEntry({required this.source, this.data, this.message})
       : timestamp = DateTime.now();
 
-  final _MessageSource source;
+  final MessageSource source;
   final Map<String, Object?>? data;
   final String? message;
   final DateTime timestamp;
 }
 
-enum _MessageSource {
+@visibleForTesting
+enum MessageSource {
   devtools,
   extension,
   info;

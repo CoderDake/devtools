@@ -6,9 +6,10 @@
 // ignore_for_file: avoid-unused-parameters
 import 'dart:async';
 
+import 'package:devtools_shared/devtools_deeplink.dart';
 import 'package:devtools_shared/devtools_extensions.dart';
-import 'package:flutter/foundation.dart';
 
+import '../../development_helpers.dart';
 import '../../primitives/utils.dart';
 
 const unsupportedMessage =
@@ -17,71 +18,71 @@ const unsupportedMessage =
 bool get isDevToolsServerAvailable => false;
 
 // This is used in g3.
-Future<Object?> request(String url) async {
+Future<Object?> request(String url) {
   throw Exception(unsupportedMessage);
 }
 
-Future<bool> isFirstRun() async {
+Future<bool> isFirstRun() {
   throw Exception(unsupportedMessage);
 }
 
-Future<bool> isAnalyticsEnabled() async {
+Future<bool> isAnalyticsEnabled() {
   throw Exception(unsupportedMessage);
 }
 
-Future<bool> setAnalyticsEnabled([bool value = true]) async {
+Future<bool> setAnalyticsEnabled([bool value = true]) {
   throw Exception(unsupportedMessage);
 }
 
-Future<String> flutterGAClientID() async {
+Future<String> flutterGAClientID() {
   throw Exception(unsupportedMessage);
 }
 
-Future<bool> setActiveSurvey(String value) async {
+Future<bool> setActiveSurvey(String value) {
   throw Exception(unsupportedMessage);
 }
 
-Future<bool> surveyActionTaken() async {
+Future<bool> surveyActionTaken() {
   throw Exception(unsupportedMessage);
 }
 
-Future<void> setSurveyActionTaken() async {
+Future<void> setSurveyActionTaken() {
   throw Exception(unsupportedMessage);
 }
 
-Future<int> surveyShownCount() async {
+Future<int> surveyShownCount() {
   throw Exception(unsupportedMessage);
 }
 
-Future<int> incrementSurveyShownCount() async {
+Future<int> incrementSurveyShownCount() {
   throw Exception(unsupportedMessage);
 }
 
-Future<String> getLastShownReleaseNotesVersion() async {
+Future<String> getLastShownReleaseNotesVersion() {
   throw Exception(unsupportedMessage);
 }
 
-Future<String> setLastShownReleaseNotesVersion(String version) async {
+Future<String> setLastShownReleaseNotesVersion(String version) {
   throw Exception(unsupportedMessage);
 }
 
 // currently unused
-Future<void> resetDevToolsFile() async {
+Future<void> resetDevToolsFile() {
   throw Exception(unsupportedMessage);
 }
 
-Future<DevToolsJsonFile?> requestBaseAppSizeFile(String path) async {
+Future<DevToolsJsonFile?> requestBaseAppSizeFile(String path) {
   throw Exception(unsupportedMessage);
 }
 
-Future<DevToolsJsonFile?> requestTestAppSizeFile(String path) async {
+Future<DevToolsJsonFile?> requestTestAppSizeFile(String path) {
   throw Exception(unsupportedMessage);
 }
 
 Future<List<DevToolsExtensionConfig>> refreshAvailableExtensions(
   String rootPath,
 ) async {
-  return kDebugMode ? _debugExtensions : [];
+  return debugHandleRefreshAvailableExtensions(rootPath);
 }
 
 Future<ExtensionEnabledState> extensionEnabledState({
@@ -89,46 +90,32 @@ Future<ExtensionEnabledState> extensionEnabledState({
   required String extensionName,
   bool? enable,
 }) async {
-  if (enable != null) {
-    _stubEnabledStates[extensionName] =
-        enable ? ExtensionEnabledState.enabled : ExtensionEnabledState.disabled;
-  }
-  return _stubEnabledStates.putIfAbsent(
-    extensionName,
-    () => ExtensionEnabledState.none,
+  return debugHandleExtensionEnabledState(
+    rootPath: rootPath,
+    extensionName: extensionName,
+    enable: enable,
   );
 }
+
+Future<List<String>> requestAndroidBuildVariants(String path) async =>
+    const <String>[];
+
+Future<AppLinkSettings> requestAndroidAppLinkSettings(
+  String path, {
+  required String buildVariant,
+}) async =>
+    AppLinkSettings.empty;
+
+Future<XcodeBuildOptions> requestIosBuildOptions(String path) async =>
+    XcodeBuildOptions.empty;
+
+Future<UniversalLinkSettings> requestIosUniversalLinkSettings(
+  String path, {
+  required String configuration,
+  required String target,
+}) async =>
+    UniversalLinkSettings.empty;
 
 void logWarning() {
   throw Exception(unsupportedMessage);
 }
-
-/// Stubbed activation states so we can develop DevTools extensions without a
-/// server connection on Desktop.
-final _stubEnabledStates = <String, ExtensionEnabledState>{};
-
-/// Stubbed extensions so we can develop DevTools Extensions without a server
-/// connection on Desktop.
-final List<DevToolsExtensionConfig> _debugExtensions = [
-  DevToolsExtensionConfig.parse({
-    DevToolsExtensionConfig.nameKey: 'foo',
-    DevToolsExtensionConfig.issueTrackerKey: 'www.google.com',
-    DevToolsExtensionConfig.versionKey: '1.0.0',
-    DevToolsExtensionConfig.pathKey: '/path/to/foo',
-  }),
-  DevToolsExtensionConfig.parse({
-    DevToolsExtensionConfig.nameKey: 'bar',
-    DevToolsExtensionConfig.issueTrackerKey: 'www.google.com',
-    DevToolsExtensionConfig.versionKey: '2.0.0',
-    DevToolsExtensionConfig.materialIconCodePointKey: 0xe638,
-    DevToolsExtensionConfig.pathKey: '/path/to/bar',
-  }),
-  DevToolsExtensionConfig.parse({
-    DevToolsExtensionConfig.nameKey: 'provider',
-    DevToolsExtensionConfig.issueTrackerKey:
-        'https://github.com/rrousselGit/provider/issues',
-    DevToolsExtensionConfig.versionKey: '3.0.0',
-    DevToolsExtensionConfig.materialIconCodePointKey: 0xe50a,
-    DevToolsExtensionConfig.pathKey: '/path/to/provider',
-  }),
-];

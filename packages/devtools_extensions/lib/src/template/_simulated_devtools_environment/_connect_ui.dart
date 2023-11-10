@@ -4,9 +4,6 @@
 
 part of '_simulated_devtools_environment.dart';
 
-// TODO(kenz): delete this once we can bump to vm_service ^11.10.0
-String? _connectedUri;
-
 class _VmServiceConnection extends StatelessWidget {
   const _VmServiceConnection({
     required this.simController,
@@ -16,7 +13,7 @@ class _VmServiceConnection extends StatelessWidget {
   static const _totalControlsHeight = 45.0;
   static const _totalControlsWidth = 415.0;
 
-  final _SimulatedDevToolsController simController;
+  final SimulatedDevToolsController simController;
   final bool connected;
 
   @override
@@ -24,16 +21,16 @@ class _VmServiceConnection extends StatelessWidget {
     return SizedBox(
       height: _totalControlsHeight,
       child: connected
-          ? const _ConnectedVmServiceDisplay()
-          : _DisconnectedVmServiceDisplay(
-              simController: simController,
-            ),
+          ? _ConnectedVmServiceDisplay(simController: simController)
+          : _DisconnectedVmServiceDisplay(simController: simController),
     );
   }
 }
 
 class _ConnectedVmServiceDisplay extends StatelessWidget {
-  const _ConnectedVmServiceDisplay();
+  const _ConnectedVmServiceDisplay({required this.simController});
+
+  final SimulatedDevToolsController simController;
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +45,10 @@ class _ConnectedVmServiceDisplay extends StatelessWidget {
               'Debugging:',
               style: theme.regularTextStyle,
             ),
-            Text(_connectedUri ?? '--'),
-            // TODO(kenz): uncomment once we can bump to vm_service ^11.10.0
-            // Text(
-            //   serviceManager.service!.wsUri ?? '--',
-            //   style: theme.boldTextStyle,
-            // ),
+            Text(
+              serviceManager.service!.wsUri ?? '--',
+              style: theme.boldTextStyle,
+            ),
           ],
         ),
         const Expanded(
@@ -63,8 +58,7 @@ class _ConnectedVmServiceDisplay extends StatelessWidget {
           elevated: true,
           label: 'Disconnect',
           onPressed: () {
-            _connectedUri = null;
-            unawaited(serviceManager.manuallyDisconnect());
+            simController.updateVmServiceConnection(uri: null);
           },
         ),
       ],
@@ -75,7 +69,7 @@ class _ConnectedVmServiceDisplay extends StatelessWidget {
 class _DisconnectedVmServiceDisplay extends StatefulWidget {
   const _DisconnectedVmServiceDisplay({required this.simController});
 
-  final _SimulatedDevToolsController simController;
+  final SimulatedDevToolsController simController;
 
   @override
   State<_DisconnectedVmServiceDisplay> createState() =>
@@ -112,6 +106,7 @@ class _DisconnectedVmServiceDisplayState
             autofocus: true,
             style: theme.regularTextStyle,
             decoration: InputDecoration(
+              contentPadding: const EdgeInsets.all(denseSpacing),
               isDense: true,
               border: const OutlineInputBorder(),
               enabledBorder: OutlineInputBorder(
@@ -123,7 +118,7 @@ class _DisconnectedVmServiceDisplayState
               hintStyle: theme.regularTextStyle,
             ),
             onSubmitted: (value) =>
-                widget.simController.vmServiceConnectionChanged(uri: value),
+                widget.simController.updateVmServiceConnection(uri: value),
             controller: _connectTextFieldController,
           ),
         ),
@@ -132,8 +127,7 @@ class _DisconnectedVmServiceDisplayState
           elevated: true,
           label: 'Connect',
           onPressed: () {
-            _connectedUri = _connectTextFieldController.text;
-            widget.simController.vmServiceConnectionChanged(
+            widget.simController.updateVmServiceConnection(
               uri: _connectTextFieldController.text,
             );
           },

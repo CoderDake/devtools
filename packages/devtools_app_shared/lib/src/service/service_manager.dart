@@ -17,6 +17,7 @@ import 'isolate_manager.dart';
 import 'isolate_state.dart';
 import 'service_extension_manager.dart';
 import 'service_extensions.dart';
+import 'service_utils.dart';
 
 final _log = Logger('service_manager');
 
@@ -104,9 +105,7 @@ class ServiceManager<T extends VmService> {
   VM? vm;
   String? sdkVersion;
 
-  bool get hasService => service != null;
-
-  bool get hasConnection => hasService && connectedApp != null;
+  bool get hasConnection => service != null && connectedApp != null;
 
   bool get connectedAppInitialized =>
       hasConnection && connectedApp!.connectedAppInitialized;
@@ -129,7 +128,7 @@ class ServiceManager<T extends VmService> {
   }
 
   /// Set the device as busy during the duration of the given async task.
-  Future<T> runDeviceBusyTask<T>(Future<T> task) async {
+  Future<V> runDeviceBusyTask<V>(Future<V> task) async {
     try {
       setDeviceBusy(true);
       return await task;
@@ -258,6 +257,7 @@ class ServiceManager<T extends VmService> {
     serviceExtensionManager.vmServiceClosed();
     isolateManager.handleVmServiceClosed();
     _registeredMethodsForService.clear();
+    _registeredServiceNotifiers.clear();
     setDeviceBusy(false);
 
     _connectedState.value = connectionState;
@@ -415,7 +415,14 @@ class ServiceManager<T extends VmService> {
 
   /// This can throw an [RPCError].
   Future<void> performHotReload() async {
-    await callServiceOnMainIsolate(hotReloadServiceName);
+    if (connectedApp?.isFlutterAppNow ?? false) {
+      await callServiceOnMainIsolate(hotReloadServiceName);
+    } else {
+      final serviceLocal = service;
+      await serviceLocal?.forEachIsolate((isolate) async {
+        await serviceLocal.reloadSources(isolate.id!);
+      });
+    }
   }
 
   /// This can throw an [RPCError].

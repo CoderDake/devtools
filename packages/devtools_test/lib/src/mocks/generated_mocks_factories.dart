@@ -152,13 +152,13 @@ MockVmServiceWrapper createMockVmServiceWrapperWithDefaults() {
   when(service.onStderrEvent).thenAnswer((_) {
     return const Stream.empty();
   });
-  when(service.onStdoutEventWithHistory).thenAnswer((_) {
+  when(service.onStdoutEventWithHistorySafe).thenAnswer((_) {
     return const Stream.empty();
   });
-  when(service.onStderrEventWithHistory).thenAnswer((_) {
+  when(service.onStderrEventWithHistorySafe).thenAnswer((_) {
     return const Stream.empty();
   });
-  when(service.onExtensionEventWithHistory).thenAnswer((_) {
+  when(service.onExtensionEventWithHistorySafe).thenAnswer((_) {
     return const Stream.empty();
   });
   return service;
@@ -220,7 +220,7 @@ Future<MockExtensionService> createMockExtensionServiceWithDefaults(
 
   final _stubEnabledStates = <String, ValueNotifier<ExtensionEnabledState>>{};
   for (final e in extensions) {
-    _stubEnabledStates[e.name.toLowerCase()] =
+    _stubEnabledStates[e.displayName] =
         ValueNotifier<ExtensionEnabledState>(ExtensionEnabledState.none);
     when(mockExtensionService.enabledStateListenable(e.name))
         .thenReturn(_stubEnabledStates[e.name.toLowerCase()]!);

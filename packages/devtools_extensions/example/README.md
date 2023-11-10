@@ -15,21 +15,21 @@ This example will show you how to:
 1. Structure your package for optimal extension development and publishing
     ```
     foo/  # formerly the repository root of your pub package
-    packages/
-        foo/  # your pub package
-        extension/
-            devtools/
-            build/
-                ...  # pre-compiled output of foo_devtools_extension
-            config.yaml
-        foo_devtools_extension/  # source code for your extension
+        packages/
+            foo/  # your pub package
+            extension/
+                devtools/
+                build/
+                    ...  # pre-compiled output of foo_devtools_extension
+                config.yaml
+            foo_devtools_extension/  # source code for your extension
     ```
 2. Configure your extension using the `foo/extension/devtools/config.yaml` file
     ```yaml
     name: foo
-    issue_tracker: <link_to_your_issue_tracker.com>
+    issueTracker: <link_to_your_issue_tracker.com>
     version: 0.0.1
-    material_icon_code_point: '0xe0b1'
+    materialIconCodePoint: '0xe0b1'
     ```
 3. Use `package:devtools_extensions` and `package:devtools_app_shared` to
 develop your DevTools extension (see source code under `foo_devtools_extension`).

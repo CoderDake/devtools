@@ -38,7 +38,7 @@ jobs:
         with:
           ref: master
 
-      - uses: dart-lang/setup-dart@d6a63dab3335f427404425de0fbfed4686d93c4f
+      - uses: dart-lang/setup-dart@b64355ae6ca0b5d484f0106a033dd1388965d06d
 
       - name: setup git config
         run: |
@@ -54,7 +54,10 @@ jobs:
           dart pub get
           popd
 
-          ORIGINAL_VERSION=$(dart tool/update_version.dart current-version)
+          # Ensure the devtools_tool command is available
+          export PATH="$PATH":`pwd`/tool/bin
+
+          ORIGINAL_VERSION=$(devtools_tool update-version current-version)
 
           if [ -z "$UPDATE_TYPE" ]; then
             # If $UPDATE_TYPE is not set, then assume it is dev
@@ -64,14 +67,14 @@ jobs:
           # If there is a major, minor, or patch bump, do it.
 
           if [ "$UPDATE_TYPE" == "patch+dev" ]; then
-            dart tool/update_version.dart auto --type patch
-            dart tool/update_version.dart auto --type dev
+            devtools_tool update-version auto --type patch
+            devtools_tool update-version auto --type dev
           elif [ "$UPDATE_TYPE" == "minor+dev" ]; then
-            dart tool/update_version.dart auto --type minor
-            dart tool/update_version.dart auto --type dev
+            devtools_tool update-version auto --type minor
+            devtools_tool update-version auto --type dev
           elif [ "$UPDATE_TYPE" == "major+dev" ]; then
-            dart tool/update_version.dart auto --type major
-            dart tool/update_version.dart auto --type dev
+            devtools_tool update-version auto --type major
+            devtools_tool update-version auto --type dev
           elif [ "$UPDATE_TYPE" == "dev" ]; then
             if ! echo "$ORIGINAL_VERSION" | grep -Eq "\-dev\.[0-9]+" ; then
               ERROR_DESCRIPTION="Doing \
@@ -82,13 +85,13 @@ jobs:
               echo "::error ,title=Cannot do a dev bump on a Release Version ($ORIGINAL_VERSION)::$ERROR_DESCRIPTION" 
               exit 1;
             fi
-            dart tool/update_version.dart auto --type dev
+            devtools_tool update-version auto --type dev
           else
             echo "ERROR: UNEXPECTED UPDATE TYPE: $UPDATE_TYPE"
             exit 1
           fi
 
-          NEW_VERSION=$(dart tool/update_version.dart current-version)
+          NEW_VERSION=$(devtools_tool update-version current-version)
 
           echo "COMMIT_MESSAGE=Updating from $ORIGINAL_VERSION to $NEW_VERSION" >> $GITHUB_OUTPUT
         env:
@@ -119,4 +122,3 @@ jobs:
           GH_TOKEN: ${{ secrets.DEVTOOLS_WORKFLOW_BOT_TOKEN }}
           ORIGINAL_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IS_DRAFT: ${{ inputs.draft == true }}
-

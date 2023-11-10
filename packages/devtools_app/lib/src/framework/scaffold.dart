@@ -41,7 +41,7 @@ class DevToolsScaffold extends StatefulWidget {
     this.page,
     List<Widget>? actions,
     this.embed = false,
-  })  : actions = actions ?? defaultActions(isEmbedded: embed),
+  })  : actions = actions ?? defaultActions(),
         super(key: key);
 
   DevToolsScaffold.withChild({
@@ -56,16 +56,11 @@ class DevToolsScaffold extends StatefulWidget {
           embed: embed,
         );
 
-  static List<Widget> defaultActions({
-    required bool isEmbedded,
-    Color? color,
-  }) =>
-      [
+  static List<Widget> defaultActions({Color? color}) => [
         OpenSettingsAction(color: color),
         if (FeatureFlags.devToolsExtensions)
           ExtensionSettingsAction(color: color),
         ReportFeedbackButton(color: color),
-        if (!isEmbedded) ImportToolbarAction(color: color),
         OpenAboutAction(color: color),
       ];
 
@@ -148,9 +143,13 @@ class DevToolsScaffoldState extends State<DevToolsScaffold>
     } else if (widget.screens[_tabController!.index].screenId != widget.page) {
       // If the page changed (eg. the route was modified by pressing back in the
       // browser), animate to the new one.
-      final newIndex = widget.page == null
+      var newIndex = widget.page == null
           ? 0 // When there's no supplied page, we show the first one.
           : widget.screens.indexWhere((t) => t.screenId == widget.page);
+      // Ensure the returned index is in range, otherwise set to 0.
+      if (newIndex == -1) {
+        newIndex = 0;
+      }
       _tabController!.animateTo(newIndex);
     }
   }
@@ -206,8 +205,10 @@ class DevToolsScaffoldState extends State<DevToolsScaffold>
         serviceConnection.errorBadgeManager.clearErrors(screen.screenId);
 
         // Update routing with the change.
-        final routerDelegate = DevToolsRouterDelegate.of(context);
-        routerDelegate.navigateIfNotCurrent(screen.screenId);
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          final routerDelegate = DevToolsRouterDelegate.of(context);
+          routerDelegate.navigateIfNotCurrent(screen.screenId);
+        });
       }
     });
 

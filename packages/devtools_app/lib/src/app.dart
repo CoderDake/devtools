@@ -111,8 +111,15 @@ class DevToolsAppState extends State<DevToolsApp> with AutoDisposeMixin {
         (e) => DevToolsScreen<void>(ExtensionScreen(e)).screen,
       );
 
-  bool get isDarkThemeEnabled => _isDarkThemeEnabled;
-  bool _isDarkThemeEnabled = true;
+  bool get isDarkThemeEnabled {
+    // We use user preference when not embedded. When embedded, we always use
+    // the IDE one (since the user can't access the preference, and the
+    // preference may have been set in an external window and differ from the
+    // IDE theme).
+    return ideTheme.embed ? ideTheme.isDarkMode : _isDarkThemeEnabledPreference;
+  }
+
+  bool _isDarkThemeEnabledPreference = true;
 
   bool get denseModeEnabled => _denseModeEnabled;
   bool _denseModeEnabled = false;
@@ -159,10 +166,10 @@ class DevToolsAppState extends State<DevToolsApp> with AutoDisposeMixin {
       },
     );
 
-    _isDarkThemeEnabled = preferences.darkModeTheme.value;
+    _isDarkThemeEnabledPreference = preferences.darkModeTheme.value;
     addAutoDisposeListener(preferences.darkModeTheme, () {
       setState(() {
-        _isDarkThemeEnabled = preferences.darkModeTheme.value;
+        _isDarkThemeEnabledPreference = preferences.darkModeTheme.value;
       });
     });
 
@@ -197,6 +204,10 @@ class DevToolsAppState extends State<DevToolsApp> with AutoDisposeMixin {
     Map<String, String?> args,
     DevToolsNavigationState? state,
   ) {
+    if (FrameworkCore.initializationInProgress) {
+      return const MaterialPage(child: CenteredCircularProgressIndicator());
+    }
+
     // Provide the appropriate page route.
     if (pages.containsKey(page)) {
       Widget widget = pages[page!]!(
@@ -278,6 +289,12 @@ class DevToolsAppState extends State<DevToolsApp> with AutoDisposeMixin {
               .where((p) => embed && page != null ? p.screenId == page : true)
               .where((p) => !hide.contains(p.screenId))
               .toList();
+          final connectedToFlutterApp =
+              serviceConnection.serviceManager.connectedApp?.isFlutterAppNow ??
+                  false;
+          final connectedToDartWebApp =
+              serviceConnection.serviceManager.connectedApp?.isDartWebAppNow ??
+                  false;
           return MultiProvider(
             providers: _providedControllers(),
             child: DevToolsScaffold(
@@ -285,15 +302,21 @@ class DevToolsAppState extends State<DevToolsApp> with AutoDisposeMixin {
               page: page,
               screens: screens,
               actions: [
-                if (connectedToVmService)
-                  // TODO(https://github.com/flutter/devtools/issues/1941)
-                  if (serviceConnection
-                          .serviceManager.connectedApp?.isFlutterAppNow ??
-                      false) ...[
-                    const HotReloadButton(),
-                    const HotRestartButton(),
-                  ],
-                ...DevToolsScaffold.defaultActions(isEmbedded: embed),
+                if (connectedToVmService) ...[
+                  // Hide the hot reload button for Dart web apps, where the
+                  // hot reload service extension is not avilable and where the
+                  // [service.reloadServices] RPC is not implemented.
+                  // TODO(https://github.com/flutter/devtools/issues/6441): find
+                  // a way to show this for Dart web apps when supported.
+                  if (!connectedToDartWebApp)
+                    HotReloadButton(
+                      callOnVmServiceDirectly: !connectedToFlutterApp,
+                    ),
+                  // This button will hide itself based on whether the
+                  // hot restart service is available for the connected app.
+                  const HotRestartButton(),
+                ],
+                ...DevToolsScaffold.defaultActions(),
               ],
             ),
           );
@@ -339,7 +362,7 @@ class DevToolsAppState extends State<DevToolsApp> with AutoDisposeMixin {
             ),
           );
         },
-      if (FeatureFlags.vsCodeSidebarTooling) ..._standaloneScreens,
+      ..._standaloneScreens,
     };
   }
 

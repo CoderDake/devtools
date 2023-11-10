@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// ignore: avoid_web_libraries_in_flutter, as designed
 import 'dart:async';
+// ignore: avoid_web_libraries_in_flutter, as designed
 import 'dart:html' as html;
 
 import 'package:devtools_app_shared/service.dart';
@@ -35,7 +35,7 @@ part 'extension_manager.dart';
 const bool _simulatedEnvironmentEnabled =
     bool.fromEnvironment('use_simulated_environment');
 
-bool get _debugUseSimulatedEnvironment =>
+bool get _useSimulatedEnvironment =>
     !kReleaseMode && _simulatedEnvironmentEnabled;
 
 /// A manager that allows extensions to interact with DevTools or the DevTools
@@ -77,7 +77,8 @@ class DevToolsExtension extends StatefulWidget {
   State<DevToolsExtension> createState() => _DevToolsExtensionState();
 }
 
-class _DevToolsExtensionState extends State<DevToolsExtension> {
+class _DevToolsExtensionState extends State<DevToolsExtension>
+    with AutoDisposeMixin {
   @override
   void initState() {
     super.initState();
@@ -88,6 +89,8 @@ class _DevToolsExtensionState extends State<DevToolsExtension> {
     for (final handler in widget.eventHandlers.entries) {
       extensionManager.registerEventHandler(handler.key, handler.value);
     }
+
+    addAutoDisposeListener(extensionManager.darkThemeEnabled);
   }
 
   void _initGlobals() {
@@ -119,6 +122,9 @@ class _DevToolsExtensionState extends State<DevToolsExtension> {
       child: widget.child,
     );
     return MaterialApp(
+      themeMode: extensionManager.darkThemeEnabled.value
+          ? ThemeMode.dark
+          : ThemeMode.light,
       theme: themeFor(
         isDarkTheme: false,
         ideTheme: ideTheme,
@@ -130,8 +136,11 @@ class _DevToolsExtensionState extends State<DevToolsExtension> {
         theme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
       ),
       home: Scaffold(
-        body: _debugUseSimulatedEnvironment
-            ? SimulatedDevToolsWrapper(child: child)
+        body: _useSimulatedEnvironment
+            ? SimulatedDevToolsWrapper(
+                requiresRunningApplication: widget.requiresRunningApplication,
+                child: child,
+              )
             : child,
       ),
     );
