@@ -170,14 +170,6 @@ class VmServiceWrapper extends VmService {
     );
   }
 
-  // Future<void> postEvent(
-  //   String stream,
-  //   String eventKind,
-  //   Map<String, Object> eventData,
-  // ) {
-  //   return super.postEvent(stream, eventKind, eventData);
-  // }
-
   Future<HeapSnapshotGraph> getHeapSnapshotGraph(IsolateRef isolateRef) async {
     return await HeapSnapshotGraph.getSnapshot(this, isolateRef);
   }
