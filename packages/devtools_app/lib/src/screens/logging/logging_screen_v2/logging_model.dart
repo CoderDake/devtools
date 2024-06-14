@@ -30,6 +30,7 @@ class LoggingTableModel extends ChangeNotifier {
     preferences.logging.retentionLimit.addListener(_onRetentionLimitUpdate);
     _retentionLimit = preferences.logging.retentionLimit.value;
   }
+
   // Make sure this is right data type to facilitate deletions.
   final _logs = <LogDataV2>[];
   final _filteredLogs = <LogDataV2>[];

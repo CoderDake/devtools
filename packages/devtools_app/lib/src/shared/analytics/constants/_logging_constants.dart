@@ -5,7 +5,7 @@
 part of '../constants.dart';
 
 // ignore: avoid_classes_with_only_static_members, requires refactor.
-/// Analytic event constants specific for logging screen.
+/// Logging event constants specific for logging screen.
 class LoggingEvent {
   static const changeRetentionLimit = 'changeRetentionLimit';
 }
