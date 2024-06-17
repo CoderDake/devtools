@@ -235,6 +235,59 @@ class LoggingSettingsDialogV2 extends StatefulWidget {
 }
 
 class _LoggingSettingsDialogV2State extends State<LoggingSettingsDialogV2> {
+  int? retentionLimit;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DevToolsDialog(
+      title: const DialogTitleText('Logging Settings'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...dialogSubHeader(
+            theme,
+            'General',
+          ),
+          const StructuredErrorsToggle(),
+          const SizedBox(height: defaultSpacing),
+          _RententionLimitSetting(
+            theme: theme,
+            onRetentionLimitChange: (newRetentionLimit) =>
+                retentionLimit = newRetentionLimit,
+          ),
+        ],
+      ),
+      actions: [
+        DialogApplyButton(
+          onPressed: () {
+            if (retentionLimit != null) {
+              // Save the new retention limit to preferences.
+              preferences.logging.retentionLimit.value = retentionLimit!;
+            }
+          },
+        ),
+        const DialogCloseButton(),
+      ],
+    );
+  }
+}
+
+class _RententionLimitSetting extends StatefulWidget {
+  const _RententionLimitSetting({
+    required this.theme,
+    required this.onRetentionLimitChange,
+  });
+
+  final ThemeData theme;
+  final void Function(int) onRetentionLimitChange;
+
+  @override
+  State<_RententionLimitSetting> createState() =>
+      _RententionLimitSettingState();
+}
+
+class _RententionLimitSettingState extends State<_RententionLimitSetting> {
   void updateRetentionLimit() {
     newRetentionLimit = preferences.logging.retentionLimit.value;
   }
@@ -254,68 +307,46 @@ class _LoggingSettingsDialogV2State extends State<LoggingSettingsDialogV2> {
   }
 
   late int newRetentionLimit;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DevToolsDialog(
-      title: const DialogTitleText('Logging Settings'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...dialogSubHeader(
-            theme,
-            'General',
-          ),
-          const StructuredErrorsToggle(),
-          const SizedBox(height: defaultSpacing),
-          Row(
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(preferences.logging.retentionLimitTitle),
-                    Text(
-                      'Used to limit the number of log messages retained.',
-                      style: theme.subtleTextStyle,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: defaultSpacing),
-              SizedBox(
-                height: defaultTextFieldHeight,
-                width: defaultTextFieldNumberWidth,
-                child: TextField(
-                  style: theme.regularTextStyle,
-                  decoration: singleLineDialogTextFieldDecoration,
-                  controller: TextEditingController(
-                    text: newRetentionLimit.toString(),
-                  ),
-                  inputFormatters: <TextInputFormatter>[
-                    // Only positive integers.
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r'^[1-9][0-9]*'),
-                    ),
-                  ],
-                  onChanged: (String text) {
-                    final newValue = int.parse(text);
-                    newRetentionLimit = newValue;
-                  },
-                ),
+              Text(preferences.logging.retentionLimitTitle),
+              Text(
+                'Used to limit the number of log messages retained.',
+                style: widget.theme.subtleTextStyle,
               ),
             ],
           ),
-        ],
-      ),
-      actions: [
-        DialogApplyButton(
-          onPressed: () {
-            preferences.logging.retentionLimit.value = newRetentionLimit;
-          },
         ),
-        const DialogCloseButton(),
+        const SizedBox(width: defaultSpacing),
+        SizedBox(
+          height: defaultTextFieldHeight,
+          width: defaultTextFieldNumberWidth,
+          child: TextField(
+            style: widget.theme.regularTextStyle,
+            decoration: singleLineDialogTextFieldDecoration,
+            controller: TextEditingController(
+              text: newRetentionLimit.toString(),
+            ),
+            inputFormatters: <TextInputFormatter>[
+              // Only positive integers.
+              FilteringTextInputFormatter.allow(
+                RegExp(r'^[1-9][0-9]*'),
+              ),
+            ],
+            onChanged: (String text) {
+              final newValue = int.parse(text);
+              newRetentionLimit = newValue;
+              widget.onRetentionLimitChange(newValue);
+            },
+          ),
+        ),
       ],
     );
   }
